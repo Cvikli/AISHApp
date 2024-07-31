@@ -14,6 +14,6 @@ list_files_with_content() {
 }
 
 # Specify the directory you want to list files from
-directory="/home/hm/repo/A/src"
+directory="/home/hm/repo/AIApp/src"
 
 list_files_with_content "$directory" | xclip -selection clipboard

@@ -82,7 +82,7 @@ const CollapseButton = styled.button`
 `;
 const Title = styled.h1`
   font-family: 'Press Start 2P', cursive;
-  font-size: 18px;
+  font-size: 22px;
 `;
 
 const ThemeToggle = styled.button`
@@ -104,7 +104,7 @@ function App() {
     "💬 Conversation 3",
   ]);
   const [isCollapsed, setIsCollapsed] = useState(false);  
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
 
   const addNewConversation = () => {

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
+import axios from 'axios';
 
 const ChatContainer = styled.div`
   flex-grow: 1;
@@ -64,9 +65,11 @@ const SendButton = styled.button`
   font-size: 14px;
 `;
 
+
 function ChatComponent({ isDarkMode }) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const messageEndRef = useRef(null);
   const textAreaRef = useRef(null);
 
@@ -81,13 +84,34 @@ function ChatComponent({ isDarkMode }) {
     }
   }, [inputValue]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (inputValue.trim()) {
-      setMessages([...messages, { type: 'user', content: inputValue }]);
-      setTimeout(() => {
-        setMessages(prevMessages => [...prevMessages, { type: 'ai', content: `resp: ${inputValue}` }]);
-      }, 500);
+      setMessages(prevMessages => [...prevMessages, { type: 'user', content: inputValue }]);
       setInputValue('');
+      setIsTyping(true);
+
+      try {
+        console.log('Sending request to backend...');
+        const response = await axios.post('http://localhost:8000', { message: inputValue }, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        console.log('Received response:', response.data);
+        setMessages(prevMessages => [...prevMessages, { type: 'ai', content: response.data.response }]);
+      } catch (error) {
+        console.error('Error:', error);
+        if (error.response) {
+          console.error('Response data:', error.response.data);
+          console.error('Response status:', error.response.status);
+          console.error('Response headers:', error.response.headers);
+        } else if (error.request) {
+          console.error('No response received:', error.request);
+        } else {
+          console.error('Error setting up request:', error.message);
+        }
+        setMessages(prevMessages => [...prevMessages, { type: 'ai', content: 'Sorry, I encountered an error.' }]);
+      } finally {
+        setIsTyping(false);
+      }
     }
   };
 
@@ -106,6 +130,7 @@ function ChatComponent({ isDarkMode }) {
             <UserMessage key={index}>➜ {message.content}</UserMessage> :
             <AIMessage key={index}>{message.content}</AIMessage>
         ))}
+        {isTyping && <AIMessage>AI is typing...</AIMessage>}
         <div ref={messageEndRef} />
       </MessageHistory>
       <InputContainer>
@@ -123,6 +148,5 @@ function ChatComponent({ isDarkMode }) {
     </ChatContainer>
   );
 }
-
 
 export default ChatComponent;
