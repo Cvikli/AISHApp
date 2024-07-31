@@ -47,7 +47,8 @@ const TextArea = styled.textarea`
   font-family: inherit;
   font-size: 14px;
   line-height: 1.2;  
-  background-color: ${props => props.isDarkMode ? '#444' : '#fff'};
+  border-right: 1px solid var(--border-color);
+  background-color: ${props => props.isDarkMode ? '#333' : '#fff'};
   color: ${props => props.isDarkMode ? '#fff' : '#333'};
 
 `;

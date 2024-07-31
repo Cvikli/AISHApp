@@ -9,7 +9,7 @@ const AppContainer = styled.div`
   overflow: hidden;  
   background-color: ${props => props.isDarkMode ? '#333' : '#fff'};
   color: ${props => props.isDarkMode ? '#fff' : '#333'};  
-  --border-color: ${props => props.isDarkMode ? '#606060' : '#303030'};
+  --border-color: ${props => props.isDarkMode ? '#606060' : '#e0e0e0'};
 `;
 
 const Sidebar = styled.div`
@@ -81,6 +81,7 @@ const CollapseButton = styled.button`
   margin: 0px 4px;
 `;
 const Title = styled.h1`
+  font-family: 'Press Start 2P', cursive;
   font-size: 18px;
 `;
 
