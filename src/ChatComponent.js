@@ -3,6 +3,10 @@ import styled from 'styled-components';
 import axios from 'axios';
 
 const ChatContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  height: 100%;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
@@ -11,7 +15,10 @@ const ChatContainer = styled.div`
 
 const MessageHistory = styled.div`
   flex-grow: 1;
-  padding: 5px;
+  overflow-y: auto;
+  height: 0;
+  flex-grow: 1;
+  padding: 10px;
   font-family: 'Arial', sans-serif;
   font-size: 14px;
   border-radius: 0px;
@@ -19,15 +26,17 @@ const MessageHistory = styled.div`
 `;
 
 const Message = styled.div`
-  margin-bottom: 5px;
+  margin-bottom: 8px;
 `;
 
 const UserMessage = styled(Message)`
-  color: #0084ff;
+  color: ${props => props.isDarkMode ? '#66b2ff' : '#0084ff'};
+  white-space: pre-wrap;
 `;
 
 const AIMessage = styled(Message)`
-  color: #000000;
+  color: ${props => props.isDarkMode ? '#ffffff' : '#fff'};
+  white-space: pre-wrap;
 `;
 
 const InputContainer = styled.div`
@@ -66,12 +75,12 @@ const SendButton = styled.button`
 `;
 
 
-function ChatComponent({ isDarkMode }) {
-  const [messages, setMessages] = useState([]);
+function ChatComponent({ isDarkMode, conversationId, messages, setMessages }) {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messageEndRef = useRef(null);
   const textAreaRef = useRef(null);
+
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -84,36 +93,35 @@ function ChatComponent({ isDarkMode }) {
     }
   }, [inputValue]);
 
+
   const handleSend = async () => {
     if (inputValue.trim()) {
-      setMessages(prevMessages => [...prevMessages, { type: 'user', content: inputValue }]);
+      const newUserMessage = { role: 'user', message: inputValue };
+      setMessages(prevMessages => [...prevMessages, newUserMessage]);
       setInputValue('');
       setIsTyping(true);
 
       try {
-        console.log('Sending request to backend...');
-        const response = await axios.post('http://localhost:8000', { message: inputValue }, {
-          headers: { 'Content-Type': 'application/json' }
-        });
-        console.log('Received response:', response.data);
-        setMessages(prevMessages => [...prevMessages, { type: 'ai', content: response.data.response }]);
+        const response = await axios.post('http://localhost:8001/api/process_message', 
+          { message: inputValue, conversation_id: conversationId },
+          { headers: { 'Content-Type': 'application/json' } }
+        );
+        
+        if (response.data.status === 'success') {
+          const newAIMessage = { role: 'ai', message: response.data.response };
+          setMessages(prevMessages => [...prevMessages, newAIMessage]);
+        } else {
+          throw new Error(response.data.message || 'Unknown error occurred');
+        }
       } catch (error) {
         console.error('Error:', error);
-        if (error.response) {
-          console.error('Response data:', error.response.data);
-          console.error('Response status:', error.response.status);
-          console.error('Response headers:', error.response.headers);
-        } else if (error.request) {
-          console.error('No response received:', error.request);
-        } else {
-          console.error('Error setting up request:', error.message);
-        }
-        setMessages(prevMessages => [...prevMessages, { type: 'ai', content: 'Sorry, I encountered an error.' }]);
+        setMessages(prevMessages => [...prevMessages, { type: 'ai', message: 'Sorry, I encountered an error.' }]);
       } finally {
         setIsTyping(false);
       }
     }
   };
+
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -122,17 +130,19 @@ function ChatComponent({ isDarkMode }) {
     }
   };
 
+
   return (
     <ChatContainer>
       <MessageHistory>
         {messages.map((message, index) => (
-          message.type === 'user' ? 
-            <UserMessage key={index}>➜ {message.content}</UserMessage> :
-            <AIMessage key={index}>{message.content}</AIMessage>
+          message.role === 'user' ? 
+            <UserMessage key={index} isDarkMode={isDarkMode}>➜ {message.message}</UserMessage> :
+            <AIMessage key={index} isDarkMode={isDarkMode}>{message.message}</AIMessage>
         ))}
         {isTyping && <AIMessage>AI is typing...</AIMessage>}
         <div ref={messageEndRef} />
       </MessageHistory>
+
       <InputContainer>
         <TextArea 
           ref={textAreaRef}
