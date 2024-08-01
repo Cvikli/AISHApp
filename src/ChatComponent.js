@@ -1,42 +1,99 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
+
+const ScrollbarStyle = `
+  scrollbar-width: thin;
+  scrollbar-color: #6b6b6b #3a3a3a;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #3a3a3a;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #6b6b6b;
+    border-radius: 4px;
+    &:hover {
+      background-color: #7b7b7b;
+    }
+  }
+`;
+
 
 const ChatContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
-  height: 100%;
   flex-grow: 1;
-  display: flex;
-  flex-direction: column;
   padding: 0;
+  background-color: ${props => props.isDarkMode ? '#1e1e1e' : '#f1f1f1'};
+  color: ${props => props.isDarkMode ? '#e0e0e0' : '#333'};
 `;
 
 const MessageHistory = styled.div`
   flex-grow: 1;
   overflow-y: auto;
   height: 0;
-  flex-grow: 1;
   padding: 10px;
   font-family: 'Arial', sans-serif;
   font-size: 14px;
-  border-radius: 0px;
-  overflow-y: auto;
+  ${ScrollbarStyle}
 `;
 
 const Message = styled.div`
   margin-bottom: 8px;
+  padding: 10px;
+  border-radius: 4px;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
 `;
 
 const UserMessage = styled(Message)`
-  color: ${props => props.isDarkMode ? '#66b2ff' : '#0084ff'};
-  white-space: pre-wrap;
+  background-color: ${props => props.isDarkMode ? '#2a2a2a' : '#e0e0e0'};
+  border-left: 4px solid #0084ff;
 `;
 
 const AIMessage = styled(Message)`
-  color: ${props => props.isDarkMode ? '#ffffff' : '#fff'};
-  white-space: pre-wrap;
+  background-color: ${props => props.isDarkMode ? '#333' : '#f0f0f0'};
+`;
+
+const StyledMarkdown = styled(ReactMarkdown)`
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+
+  & > * {
+    margin-bottom: 0.5em;
+  }
+
+  code {
+    background-color: ${props => props.isDarkMode ? '#444' : '#e0e0e0'};
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  pre {
+    background-color: ${props => props.isDarkMode ? '#444' : '#e0e0e0'};
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
 `;
 
 const InputContainer = styled.div`
@@ -60,7 +117,7 @@ const TextArea = styled.textarea`
   border-right: 1px solid var(--border-color);
   background-color: ${props => props.isDarkMode ? '#333' : '#fff'};
   color: ${props => props.isDarkMode ? '#fff' : '#333'};
-
+  ${ScrollbarStyle}
 `;
 
 const SendButton = styled.button`
@@ -74,13 +131,11 @@ const SendButton = styled.button`
   font-size: 14px;
 `;
 
-
 function ChatComponent({ isDarkMode, conversationId, messages, setMessages }) {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messageEndRef = useRef(null);
   const textAreaRef = useRef(null);
-
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -92,7 +147,6 @@ function ChatComponent({ isDarkMode, conversationId, messages, setMessages }) {
       textAreaRef.current.style.height = `${Math.min(textAreaRef.current.scrollHeight, 150)}px`;
     }
   }, [inputValue]);
-
 
   const handleSend = async () => {
     if (inputValue.trim()) {
@@ -115,13 +169,12 @@ function ChatComponent({ isDarkMode, conversationId, messages, setMessages }) {
         }
       } catch (error) {
         console.error('Error:', error);
-        setMessages(prevMessages => [...prevMessages, { type: 'ai', message: 'Sorry, I encountered an error.' }]);
+        setMessages(prevMessages => [...prevMessages, { role: 'ai', message: 'Sorry, I encountered an error.' }]);
       } finally {
         setIsTyping(false);
       }
     }
   };
-
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -130,16 +183,17 @@ function ChatComponent({ isDarkMode, conversationId, messages, setMessages }) {
     }
   };
 
-
   return (
-    <ChatContainer>
-      <MessageHistory>
+    <ChatContainer isDarkMode={isDarkMode}>
+      <MessageHistory isDarkMode={isDarkMode}>
         {messages.map((message, index) => (
           message.role === 'user' ? 
             <UserMessage key={index} isDarkMode={isDarkMode}>➜ {message.message}</UserMessage> :
-            <AIMessage key={index} isDarkMode={isDarkMode}>{message.message}</AIMessage>
+            <AIMessage key={index} isDarkMode={isDarkMode}>
+              <StyledMarkdown isDarkMode={isDarkMode}>{message.message}</StyledMarkdown>
+            </AIMessage>
         ))}
-        {isTyping && <AIMessage>AI is typing...</AIMessage>}
+        {isTyping && <AIMessage isDarkMode={isDarkMode}>AI is typing...</AIMessage>}
         <div ref={messageEndRef} />
       </MessageHistory>
 

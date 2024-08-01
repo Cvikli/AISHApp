@@ -5,7 +5,6 @@ import axios from 'axios';
 
 const AppContainer = styled.div`
   display: flex;
-  display: flex;
   height: 100vh;
   width: 100vw;
   overflow: hidden;  
@@ -41,10 +40,10 @@ const NewConversationButton = styled.button`
   border: none;
   background-color: transparent;
   cursor: pointer;
+  color: ${props => props.isDarkMode ? '#fff' : '#333'};
   &:hover {
     background-color: #606060;
   }
-
 `;
 
 const ConversationList = styled.div`
@@ -65,18 +64,12 @@ const MainContent = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
 `;
 
 const Header = styled.div`
   display: flex;
   align-items: center;
-  height_ 36px;  
+  height: 36px;  
   border-bottom: 1px solid var(--border-color);
 `;
 
@@ -88,21 +81,23 @@ const CollapseButton = styled.button`
   font-size: 18px;
   cursor: pointer;
   margin: 0px 4px;
+  color: ${props => props.isDarkMode ? '#fff' : '#333'};
 `;
+
 const Title = styled.h1`
   font-family: 'Press Start 2P', cursive;
   font-size: 22px;
+  margin: 0;
+  line-height: 36px;
 `;
 
 const ThemeToggle = styled.button`
-  position: absolute;
-  top: 10px;
-  right: 10px;
   background: none;
   border: none;
   font-size: 24px;
   cursor: pointer;
-  z-index: 1000;
+  padding: 5px 10px;
+  color: ${props => props.isDarkMode ? '#fff' : '#333'};
 `;
 
 const Button = styled.button`
@@ -111,8 +106,31 @@ const Button = styled.button`
   background-color: #0084ff;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 0px;
   cursor: pointer;
+  font-size: 14px;
+`;
+
+const ButtonGroup = styled.div`
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+`;
+
+const FolderSelectButton = styled(Button)`
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const RefreshButton = styled(Button)`
+  padding: 5px 10px;
+  font-size: 18px;
+`;
+const HiddenInput = styled.input`
+  display: none;
 `;
 
 function App() {
@@ -120,13 +138,25 @@ function App() {
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [projectPath, setProjectPath] = useState('');  
+  const [projectPath, setProjectPath] = useState("");
   const [messages, setMessages] = useState([]);
-
 
   useEffect(() => {
     initializeAIState();
   }, []);
+
+  const handleFolderSelect = async () => {
+    try {
+      const result = await window.electron.openFolder();
+      if (!result.canceled && result.filePaths.length > 0) {
+        const path = result.filePaths[0];
+        setProjectPath(path);
+        await setPath(path);
+      }
+    } catch (error) {
+      console.error('Error selecting folder:', error);
+    }
+  };
 
 
   const initializeAIState = async () => {
@@ -180,9 +210,9 @@ function App() {
   };
 
 
-  const setPath = async () => {
+  const setPath = async (path) => {
     try {
-      const response = await axios.post('http://localhost:8001/api/set_path', { path: projectPath });
+      const response = await axios.post('http://localhost:8001/api/set_path', { path: path });
       if (response.data.status === 'success') {
         alert(response.data.message);
       }
@@ -190,6 +220,7 @@ function App() {
       console.error('Error setting project path:', error);
     }
   };
+  
   const refreshProject = async () => {
     try {
       const response = await axios.post('http://localhost:8001/api/refresh_project');
@@ -225,8 +256,8 @@ function App() {
     <AppContainer isDarkMode={isDarkMode}>
       <Sidebar isCollapsed={isCollapsed}>
         <SidebarHeader>
-          <NewConversationButton onClick={startNewConversation}>
-            {isCollapsed ? '+' : '➕ New Conversation'}
+          <NewConversationButton onClick={startNewConversation} isDarkMode={isDarkMode}>
+            {isCollapsed ? '+' : '+ New Conversation'}
           </NewConversationButton>
         </SidebarHeader>
         {!isCollapsed && (
@@ -242,23 +273,20 @@ function App() {
 
       <MainContent>
         <Header>
-          <CollapseButton onClick={toggleSidebar}>
+          <CollapseButton onClick={toggleSidebar} isDarkMode={isDarkMode}>
             {isCollapsed ? '▶' : '◀'}
           </CollapseButton>
           <Title>KODA</Title>
-          <ThemeToggle onClick={toggleTheme}>
-            {isDarkMode ? '☀️' : '🌙'}
-          </ThemeToggle>
-
-          <input 
-            type="text" 
-            value={projectPath} 
-            onChange={(e) => setProjectPath(e.target.value)} 
-            placeholder="Enter project path"
-          />
-          <Button onClick={setPath}>Set Project Path</Button>
-          <Button onClick={refreshProject}>Refresh Project</Button>
-          <Button onClick={updateSystemPrompt}>Update System Prompt</Button>
+          <ButtonGroup>
+            <FolderSelectButton onClick={handleFolderSelect}>
+              {projectPath || "Select Project Path"}
+            </FolderSelectButton>
+            <RefreshButton onClick={refreshProject}>🔄</RefreshButton>
+            <Button onClick={updateSystemPrompt}>Update System Prompt</Button>
+            <ThemeToggle onClick={toggleTheme} isDarkMode={isDarkMode}>
+              {isDarkMode ? '☀️' : '🌙'}
+            </ThemeToggle>
+          </ButtonGroup>
         </Header>
         <ChatComponent 
           isDarkMode={isDarkMode} 
