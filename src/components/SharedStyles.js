@@ -1,14 +1,14 @@
 import styled from 'styled-components';
 
 export const Button = styled.button`
-  padding: 5px 10px;
-  margin: 5px;
-  background-color: #0084ff;
-  color: white;
+  padding: 10px 16px;
+  margin: 0px;
+  background-color: ${props => props.theme.buttonBackground};
+  color: ${props => props.theme.buttonText};
   border: none;
   border-radius: 0px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
 `;
 
 export const ScrollbarStyle = `
@@ -23,6 +23,7 @@ export const ScrollbarStyle = `
     background: #3a3a3a;
     border-radius: 4px;
   }
+
   &::-webkit-scrollbar-thumb {
     background-color: #6b6b6b;
     border-radius: 4px;

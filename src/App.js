@@ -113,7 +113,7 @@ function App() {
             updateSystemPrompt={updateSystemPrompt}
             projectPath={projectPath}
           />
-          <ChatComponent 
+          <ChatComponent theme={theme} 
             theme={theme}
             conversationId={selectedConversationId}          
             messages={messages}

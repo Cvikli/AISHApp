@@ -1,11 +1,13 @@
 import React from 'react';
 import styled from 'styled-components';
+import { Button } from './SharedStyles';
 
 const HeaderContainer = styled.div`
   display: flex;
   align-items: center;
   height: 36px;  
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid ${props => props.theme.borderColor};
+  background-color: ${props => props.theme.background};
 `;
 
 const CollapseButton = styled.button`
@@ -16,7 +18,10 @@ const CollapseButton = styled.button`
   font-size: 18px;
   cursor: pointer;
   margin: 0px 4px;
-  color: ${props => props.isDarkMode ? '#fff' : '#333'};
+  color: ${props => props.theme.text};
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const Title = styled.h1`
@@ -24,6 +29,7 @@ const Title = styled.h1`
   font-size: 22px;
   margin: 0;
   line-height: 36px;
+  color: ${props => props.theme.text};
 `;
 
 const ThemeToggle = styled.button`
@@ -32,18 +38,7 @@ const ThemeToggle = styled.button`
   font-size: 24px;
   cursor: pointer;
   padding: 5px 10px;
-  color: ${props => props.isDarkMode ? '#fff' : '#333'};
-`;
-
-const Button = styled.button`
-  padding: 5px 10px;
-  margin: 5px;
-  background-color: #0084ff;
-  color: white;
-  border: none;
-  border-radius: 0px;
-  cursor: pointer;
-  font-size: 14px;
+  color: ${props => props.theme.text};
 `;
 
 const ButtonGroup = styled.div`
@@ -61,33 +56,33 @@ const FolderSelectButton = styled(Button)`
 `;
 
 const RefreshButton = styled(Button)`
-  padding: 5px 10px;
   font-size: 18px;
 `;
 
 function Header({ 
-  isDarkMode, 
+  theme,
   toggleSidebar, 
   toggleTheme, 
   handleFolderSelect, 
   refreshProject, 
   updateSystemPrompt, 
-  projectPath 
+  projectPath,
+  isCollapsed
 }) {
   return (
-    <HeaderContainer>
-      <CollapseButton onClick={toggleSidebar} isDarkMode={isDarkMode}>
-        {toggleSidebar ? '▶' : '◀'}
+    <HeaderContainer theme={theme}>
+      <CollapseButton onClick={toggleSidebar} theme={theme}>
+        {isCollapsed ? '▶' : '◀'}
       </CollapseButton>
-      <Title>KODA</Title>
+      <Title theme={theme}>KODA</Title>
       <ButtonGroup>
         <FolderSelectButton onClick={handleFolderSelect}>
           {projectPath || "Select Project Path"}
         </FolderSelectButton>
         <RefreshButton onClick={refreshProject}>🔄</RefreshButton>
         <Button onClick={updateSystemPrompt}>Update System Prompt</Button>
-        <ThemeToggle onClick={toggleTheme} isDarkMode={isDarkMode}>
-          {isDarkMode ? '☀️' : '🌙'}
+        <ThemeToggle onClick={toggleTheme} theme={theme}>
+          {theme.name === 'dark' ? '☀️' : '🌙'}
         </ThemeToggle>
       </ButtonGroup>
     </HeaderContainer>

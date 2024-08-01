@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import styled, { ThemeProvider } from 'styled-components';
+import styled from 'styled-components';
 import * as API from './API';
-import { ScrollbarStyle } from './components/SharedStyles';
-import { lightTheme, darkTheme } from './theme';
+import { ScrollbarStyle, Button } from './components/SharedStyles';
 import { MAX_TEXTAREA_HEIGHT } from './constants';
 import Message from './components/Message';
 
@@ -23,6 +22,7 @@ const MessageHistory = styled.div`
   padding: 10px;
   font-family: 'Arial', sans-serif;
   font-size: 14px;
+  background-color: ${props => props.theme.chatBackground};
   ${ScrollbarStyle}
 `;
 
@@ -30,6 +30,7 @@ const InputContainer = styled.div`
   display: flex;
   padding: 0px;
   align-items: flex-end;
+  background-color: ${props => props.theme.background};
 `;
 
 const TextArea = styled.textarea`
@@ -45,28 +46,21 @@ const TextArea = styled.textarea`
   font-size: 14px;
   line-height: 1.2;  
   border-right: 1px solid ${props => props.theme.borderColor};
-  background-color: ${props => props.theme.background};
+  background-color: ${props => props.theme.inputBackground};
   color: ${props => props.theme.text};
   ${ScrollbarStyle}
 `;
 
-const SendButton = styled.button`
-  padding: 10px 10px;
-  background-color: #0084ff;
-  color: white;
-  border: none;
-  border-radius: 0px;
-  cursor: pointer;
+const SendButton = styled(Button)`
   height: auto;
-  font-size: 14px;
 `;
 
-function ChatComponent({ isDarkMode, conversationId, messages, setMessages }) {
+
+function ChatComponent({ theme, conversationId, messages, setMessages }) {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messageEndRef = useRef(null);
   const textAreaRef = useRef(null);
-  const theme = isDarkMode ? darkTheme : lightTheme;
 
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -107,33 +101,33 @@ function ChatComponent({ isDarkMode, conversationId, messages, setMessages }) {
   };
 
   return (
-    <ThemeProvider theme={theme}>
-      <ChatContainer>
-        <MessageHistory>
-          {messages.map((message, index) => (
-            <Message 
-              key={index} 
-              message={message.message} 
-              isUser={message.role === 'user'} 
-            />
-          ))}
-          {isTyping && <Message message="AI is typing..." isUser={false} />}
-          <div ref={messageEndRef} />
-        </MessageHistory>
-
-        <InputContainer>
-          <TextArea 
-            ref={textAreaRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyPress}
-            placeholder="Type your message here... (Press Shift+Enter for new line)"
-            rows={1}          
+    <ChatContainer theme={theme}>
+      <MessageHistory theme={theme}>
+        {messages.map((message, index) => (
+          <Message 
+            key={index} 
+            message={message.message} 
+            isUser={message.role === 'user'} 
+            theme={theme}
           />
-          <SendButton onClick={handleSend}>Send</SendButton>
-        </InputContainer>
-      </ChatContainer>
-    </ThemeProvider>
+        ))}
+        {isTyping && <Message message="AI is typing..." isUser={false} theme={theme} />}
+        <div ref={messageEndRef} />
+      </MessageHistory>
+
+      <InputContainer theme={theme}>
+        <TextArea 
+          ref={textAreaRef}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder="Type your message here... (Press Shift+Enter for new line)"
+          rows={1}
+          theme={theme}
+        />
+        <SendButton onClick={handleSend}>Send</SendButton>
+      </InputContainer>
+    </ChatContainer>
   );
 }
 
