@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { useAPI } from '../hooks/useAPI';
 import { lightTheme, darkTheme } from '../theme';
 
@@ -6,7 +6,7 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   console.log('AppProvider rendering');
-  const [conversations, setConversations] = useState([]);
+  const [conversations, setConversations] = useState({});
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -16,6 +16,22 @@ export const AppProvider = ({ children }) => {
   const theme = isDarkMode ? { ...darkTheme, name: 'dark' } : { ...lightTheme, name: 'light' };
 
   const api = useAPI();
+
+  useEffect(() => {
+    const initializeApp = async () => {
+      console.log('initializeApp called');
+      try {
+        const data = await api.initializeAIState();
+        setSelectedConversationId(data.conversation_id);
+        console.log(data.available_conversations)
+        setConversations(data.available_conversations);
+        console.log("Initialized conversations:", data.available_conversations);
+      } catch (error) {
+        console.error('Failed to initialize AI state:', error);
+      }
+    };
+    initializeApp();
+  }, []);
 
   const selectConversation = useCallback(async (id) => {
     try {

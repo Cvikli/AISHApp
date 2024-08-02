@@ -4,6 +4,7 @@ import * as API from './API';
 import { ScrollbarStyle, Button } from './components/SharedStyles';
 import { MAX_TEXTAREA_HEIGHT } from './constants';
 import Message from './components/Message';
+import SystemPrompt from './components/SystemPrompt';
 
 const ChatContainer = styled.div`
   display: flex;
@@ -18,7 +19,6 @@ const ChatContainer = styled.div`
 const MessageHistory = styled.div`
   flex-grow: 1;
   overflow-y: auto;
-  height: 0;
   padding: 0;
   font-family: 'Arial', sans-serif;
   font-size: 14px;
@@ -55,16 +55,19 @@ const SendButton = styled(Button)`
   height: auto;
 `;
 
-
 function ChatComponent({ theme, conversationId, messages, setMessages }) {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
   const messageEndRef = useRef(null);
   const textAreaRef = useRef(null);
+  const messageHistoryRef = useRef(null);
 
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (messageEndRef.current && !isSystemPromptOpen) {
+      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isSystemPromptOpen]);
 
   useEffect(() => {
     if (textAreaRef.current) {
@@ -100,17 +103,43 @@ function ChatComponent({ theme, conversationId, messages, setMessages }) {
     }
   };
 
+  const handleSystemPromptUpdate = (updatedMessage) => {
+    setMessages(prevMessages => {
+      const systemPromptIndex = prevMessages.findIndex(msg => msg.role === 'system');
+      if (systemPromptIndex !== -1) {
+        const updatedMessages = [...prevMessages];
+        updatedMessages[systemPromptIndex] = { ...updatedMessages[systemPromptIndex], message: updatedMessage };
+        return updatedMessages;
+      }
+      return prevMessages;
+    });
+  };
+
+  const systemPrompt = messages.find(msg => msg.role === 'system');
+  const otherMessages = messages.filter(msg => msg.role !== 'system');
+
   return (
     <ChatContainer theme={theme}>
-      <MessageHistory theme={theme}>
-        {messages.map((message, index) => (
-          <Message 
-            key={index} 
-            message={message.message} 
-            isUser={message.role === 'user'} 
+      <MessageHistory ref={messageHistoryRef} theme={theme}>
+        {systemPrompt && (
+          <SystemPrompt
+            key="system-prompt"
+            message={systemPrompt.message}
+            theme={theme}
+            onUpdate={handleSystemPromptUpdate}
+            isOpen={isSystemPromptOpen}
+            setIsOpen={setIsSystemPromptOpen}
+          />
+        )}
+        {otherMessages.map((message, index) => (
+          <Message
+            key={index}
+            message={message.message}
+            isUser={message.role === 'user'}
             theme={theme}
           />
         ))}
+
         {isTyping && <Message message="AI is typing..." isUser={false} theme={theme} />}
         <div ref={messageEndRef} />
       </MessageHistory>

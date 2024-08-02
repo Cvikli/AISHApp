@@ -52,15 +52,14 @@ const Layout = () => {
     }
   };
 
+  // Get the name of the selected conversation
+  const selectedConversationName = conversations[selectedConversationId] || '';
+
   return (
     <AppContainer>
       <Sidebar
         theme={theme}
         isCollapsed={isCollapsed}
-        conversations={conversations}
-        selectedConversationId={selectedConversationId}
-        startNewConversation={api.startNewConversation}
-        selectConversation={api.selectConversation}
       />
       <MainContent>
         <Header 
@@ -72,6 +71,8 @@ const Layout = () => {
           updateSystemPrompt={api.updateSystemPrompt}
           projectPath={projectPath}
           isCollapsed={isCollapsed}
+          selectedConversationId={selectedConversationId}
+          selectedConversationName={selectedConversationName}
         />
         <ChatComponent 
           theme={theme}

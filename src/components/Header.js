@@ -32,6 +32,12 @@ const Title = styled.h1`
   color: ${props => props.theme.text};
 `;
 
+const ConversationInfo = styled.span`
+  font-size: 14px;
+  margin-left: 10px;
+  color: ${props => props.theme.text};
+`;
+
 const ThemeToggle = styled.button`
   background: none;
   border: none;
