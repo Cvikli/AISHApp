@@ -6,8 +6,10 @@ import Layout from './Layout';
 function AppContent() {
   const { theme, api, setSelectedConversationId, setConversations } = useAppContext();
 
-  useEffect(() => {    
-    const init = async () => {
+  useEffect(() => {
+    console.log('AppContent useEffect triggered');
+    const initializeApp = async () => {
+      console.log('initializeApp called');
       try {
         const data = await api.initializeAIState();
         setSelectedConversationId(data.conversation_id);
@@ -17,8 +19,8 @@ function AppContent() {
         console.error('Failed to initialize AI state:', error);
       }
     };
-    init();
-  }, [api, setSelectedConversationId, setConversations]);
+    initializeApp();
+  }, []); // Empty dependency array
 
   return (
     <ThemeProvider theme={theme}>

@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { useAppContext } from '../contexts/AppContext';
 
 const SidebarContainer = styled.div`
   flex-shrink: 0;
@@ -52,14 +53,9 @@ const ConversationItem = styled.div`
   `}
 `;
 
-function Sidebar({ 
-  isCollapsed, 
-  theme, 
-  conversations, 
-  selectedConversationId, 
-  startNewConversation, 
-  selectConversation 
-}) {
+function Sidebar({ isCollapsed, theme, conversations, selectedConversationId, startNewConversation }) {
+  const { selectConversation } = useAppContext();
+
   return (
     <SidebarContainer isCollapsed={isCollapsed} theme={theme}>
       <SidebarHeader>
@@ -75,8 +71,7 @@ function Sidebar({
               onClick={() => selectConversation(conv)}
               isSelected={conv === selectedConversationId}
               theme={theme}
-            >
-              {conv === selectedConversationId ? '➤ ' : ''}{conv}
+            >{conv}
             </ConversationItem>
           ))}
         </ConversationList>

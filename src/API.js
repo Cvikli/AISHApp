@@ -8,6 +8,7 @@ const handleApiError = (error, message) => {
 };
 
 export const initializeAIState = async () => {
+  console.log('initializeAIState called');
   try {
     const response = await axios.get(`${BASE_URL}/initialize`);
     return response.data;
