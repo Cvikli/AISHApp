@@ -54,6 +54,13 @@ const FolderSelectButton = styled(Button)`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const FolderIcon = styled.span`
+  margin-right: 5px;
 `;
 
 const RefreshButton = styled(Button)`
@@ -80,6 +87,42 @@ function Header({
   isCollapsed,
   selectedConversationId
 }) {
+  const selectFolder = async () => {
+    try {
+      // Check if the browser supports the File System Access API
+      if ('showDirectoryPicker' in window) {
+        const directoryHandle = await window.showDirectoryPicker();
+        console.log('Directory Handle:', directoryHandle);
+        
+        // Get the name of the directory
+        const name = directoryHandle.name;
+        console.log('Directory Name:', name);
+        
+        // List files in the directory
+        for await (const entry of directoryHandle.values()) {
+          console.log(entry.kind, entry.name);
+        }
+
+        // Construct a relative path-like string
+        let pathParts = [];
+        let currentHandle = directoryHandle;
+        while (currentHandle !== null) {
+          pathParts.unshift(currentHandle.name);
+          currentHandle = await currentHandle.getParent();
+        }
+        console.log('Directory pathParts:', pathParts);
+        const relativePath = pathParts.join('/');
+        console.log('Relative Path:', relativePath);
+        // handleFolderSelect(path);
+      } else {
+        // Fallback for browsers that don't support showDirectoryPicker
+        alert("Your browser doesn't support folder selection. Please use a modern browser like Chrome or Edge.");
+      }
+    } catch (err) {
+      console.error("Error selecting folder:", err);
+    }
+  };
+
   return (
     <HeaderContainer theme={theme}>
       <CollapseButton onClick={toggleSidebar} theme={theme}>
@@ -92,8 +135,9 @@ function Header({
         </ConversationId>
       </Title>
       <ButtonGroup>
-        <FolderSelectButton onClick={handleFolderSelect}>
-          {projectPath || "Select Project Path"}
+        <FolderSelectButton onClick={selectFolder}>
+          <FolderIcon>📁</FolderIcon>
+          {projectPath ? projectPath : "Select Project"}
         </FolderSelectButton>
         <RefreshButton onClick={refreshProject}>🔄</RefreshButton>
         <Button onClick={updateSystemPrompt}>Update System Prompt</Button>

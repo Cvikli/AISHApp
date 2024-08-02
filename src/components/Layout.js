@@ -52,6 +52,7 @@ const Layout = () => {
 
   const handleFolderSelect = async () => {
     try {
+      console.log(window.electron)
       const result = await window.electron.openFolder();
       if (!result.canceled && result.filePaths.length > 0) {
         const path = result.filePaths[0];
