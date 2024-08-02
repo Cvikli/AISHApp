@@ -10,18 +10,13 @@ const ChatContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
-  flex-grow: 1;
-  padding: 0;
-  background-color: ${props => props.theme.chatBackground};
-  color: ${props => props.theme.text};
+  overflow: hidden;
 `;
 
 const MessageHistory = styled.div`
-  flex-grow: 1;
+  flex: 1;
   overflow-y: auto;
-  padding: 0;
-  font-family: 'Arial', sans-serif;
-  font-size: 14px;
+  padding: 0px;
   background-color: ${props => props.theme.chatBackground};
   ${ScrollbarStyle}
 `;
@@ -29,7 +24,6 @@ const MessageHistory = styled.div`
 const InputContainer = styled.div`
   display: flex;
   padding: 0px;
-  align-items: flex-end;
   background-color: ${props => props.theme.background};
 `;
 
@@ -61,7 +55,6 @@ function ChatComponent({ theme, conversationId, messages, setMessages }) {
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
   const messageEndRef = useRef(null);
   const textAreaRef = useRef(null);
-  const messageHistoryRef = useRef(null);
 
   useEffect(() => {
     if (messageEndRef.current && !isSystemPromptOpen) {
@@ -78,18 +71,18 @@ function ChatComponent({ theme, conversationId, messages, setMessages }) {
   
   const handleSend = async () => {
     if (inputValue.trim()) {
-      const newUserMessage = { role: 'user', message: inputValue };
+      const newUserMessage = { role: 'user', message: inputValue, timestamp: new Date().toISOString() };
       setMessages(prevMessages => [...prevMessages, newUserMessage]);
       setInputValue('');
       setIsTyping(true);
   
       try {
         const data = await API.processMessage(inputValue, conversationId);
-        const newAIMessage = { role: 'ai', message: data.response };
+        const newAIMessage = { role: 'ai', message: data.response, timestamp: new Date().toISOString() };
         setMessages(prevMessages => [...prevMessages, newAIMessage]);
       } catch (error) {
         console.error('Error:', error);
-        setMessages(prevMessages => [...prevMessages, { role: 'ai', message: 'Sorry, I encountered an error.' }]);
+        setMessages(prevMessages => [...prevMessages, { role: 'ai', message: 'Sorry, I encountered an error.', timestamp: new Date().toISOString() }]);
       } finally {
         setIsTyping(false);
       }
@@ -119,11 +112,10 @@ function ChatComponent({ theme, conversationId, messages, setMessages }) {
   const otherMessages = messages.filter(msg => msg.role !== 'system');
 
   return (
-    <ChatContainer theme={theme}>
-      <MessageHistory ref={messageHistoryRef} theme={theme}>
+    <ChatContainer>
+      <MessageHistory theme={theme}>
         {systemPrompt && (
           <SystemPrompt
-            key="system-prompt"
             message={systemPrompt.message}
             theme={theme}
             onUpdate={handleSystemPromptUpdate}
@@ -136,14 +128,13 @@ function ChatComponent({ theme, conversationId, messages, setMessages }) {
             key={index}
             message={message.message}
             isUser={message.role === 'user'}
+            timestamp={message.timestamp}
             theme={theme}
           />
         ))}
-
         {isTyping && <Message message="AI is typing..." isUser={false} theme={theme} />}
         <div ref={messageEndRef} />
       </MessageHistory>
-
       <InputContainer theme={theme}>
         <TextArea 
           ref={textAreaRef}

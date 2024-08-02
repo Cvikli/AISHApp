@@ -9,8 +9,7 @@ export const useAPI = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await apiFunc(...args);
-      return data;
+      return await apiFunc(...args);
     } catch (err) {
       setError(err.message);
     } finally {

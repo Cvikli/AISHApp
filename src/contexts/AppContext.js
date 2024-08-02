@@ -23,9 +23,7 @@ export const AppProvider = ({ children }) => {
       try {
         const data = await api.initializeAIState();
         setSelectedConversationId(data.conversation_id);
-        console.log(data.available_conversations)
         setConversations(data.available_conversations);
-        console.log("Initialized conversations:", data.available_conversations);
       } catch (error) {
         console.error('Failed to initialize AI state:', error);
       }
@@ -38,13 +36,48 @@ export const AppProvider = ({ children }) => {
       const response = await api.selectConversation(id);
       if (response && response.status === 'success') {
         setSelectedConversationId(id);
-        console.log(response.history)
         setMessages(response.history || []);
       }
     } catch (error) {
       console.error('Error selecting conversation:', error);
     }
   }, [api]);
+
+  const startNewConversation = useCallback(async () => {
+    try {
+      const response = await api.startNewConversation();
+      if (response && response.status === 'success') {
+        const newConversation = {
+          id: response.conversation_id,
+          timestamp: new Date().toISOString(),
+          sentence: "New Conversation",
+          messages: []
+        };
+        setConversations(prevConversations => ({
+          ...prevConversations,
+          [response.conversation_id]: newConversation
+        }));
+        await selectConversation(response.conversation_id);
+      }
+    } catch (error) {
+      console.error('Error starting new conversation:', error);
+    }
+  }, [api, selectConversation]);
+
+  const addMessage = useCallback((newMessage) => {
+    setMessages(prevMessages => [...prevMessages, newMessage]);
+    setConversations(prevConversations => {
+      const updatedConversation = {
+        ...prevConversations[selectedConversationId],
+        messages: [...(prevConversations[selectedConversationId].messages || []), newMessage],
+        sentence: newMessage.role === 'user' ? newMessage.message.substring(0, 30) + '...' : prevConversations[selectedConversationId].sentence
+      };
+      return {
+        ...prevConversations,
+        [selectedConversationId]: updatedConversation
+      };
+    });
+  }, [selectedConversationId]);
 
   const value = {
     conversations,
@@ -62,6 +95,8 @@ export const AppProvider = ({ children }) => {
     theme,
     api,
     selectConversation,
+    startNewConversation,
+    addMessage,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

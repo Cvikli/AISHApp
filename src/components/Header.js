@@ -27,23 +27,18 @@ const CollapseButton = styled.button`
 const Title = styled.h1`
   font-family: 'Press Start 2P', cursive;
   font-size: 22px;
-  margin: 0;
+  margin: 0 14px;
+  padding-top: 5px;
   line-height: 36px;
   color: ${props => props.theme.text};
+  display: flex;
+  align-items: center;
 `;
 
-const ConversationInfo = styled.span`
-  font-size: 14px;
-  margin-left: 10px;
-  color: ${props => props.theme.text};
-`;
-
-const ThemeToggle = styled.button`
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 5px 10px;
+const ConversationId = styled.span`
+  font-family: 'Arial', sans-serif;
+  font-size: 16px;
+  margin-left: 22px;
   color: ${props => props.theme.text};
 `;
 
@@ -65,6 +60,15 @@ const RefreshButton = styled(Button)`
   font-size: 18px;
 `;
 
+const ThemeToggle = styled.button`
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 5px 10px;
+  color: ${props => props.theme.text};
+`;
+
 function Header({ 
   theme,
   toggleSidebar, 
@@ -73,14 +77,20 @@ function Header({
   refreshProject, 
   updateSystemPrompt, 
   projectPath,
-  isCollapsed
+  isCollapsed,
+  selectedConversationId
 }) {
   return (
     <HeaderContainer theme={theme}>
       <CollapseButton onClick={toggleSidebar} theme={theme}>
         {isCollapsed ? '▶' : '◀'}
       </CollapseButton>
-      <Title theme={theme}>KODA</Title>
+      <Title theme={theme}>
+        KODA
+        <ConversationId theme={theme}>
+          {selectedConversationId ? `#${selectedConversationId}` : ''}
+        </ConversationId>
+      </Title>
       <ButtonGroup>
         <FolderSelectButton onClick={handleFolderSelect}>
           {projectPath || "Select Project Path"}

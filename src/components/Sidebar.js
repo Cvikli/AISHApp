@@ -1,16 +1,18 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useAppContext } from '../contexts/AppContext';
+import { ScrollbarStyle } from './SharedStyles';
 
 const SidebarContainer = styled.div`
   flex-shrink: 0;
-  overflow: hidden;
   width: ${props => props.isCollapsed ? '36px' : '250px'};
-  border-right: 1px solid ${props => props.theme.borderColor};
+  height: 100%;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease;
   background-color: ${props => props.theme.background};
+  border-right: 1px solid ${props => props.theme.borderColor};
 `;
 
 const NewConversationButton = styled.button`
@@ -25,7 +27,6 @@ const NewConversationButton = styled.button`
   background-color: transparent;
   cursor: pointer;
   color: ${props => props.theme.text};
-  border-bottom: 1px solid ${props => props.theme.borderColor};
   &:hover {
     background-color: ${props => props.theme.hoverBackground};
   }
@@ -34,15 +35,13 @@ const NewConversationButton = styled.button`
 const ConversationList = styled.div`
   flex-grow: 1;
   overflow-y: auto;
+  ${ScrollbarStyle}
 `;
 
 const ConversationItem = styled.div`
   padding: 8px 10px;
   cursor: pointer;
   color: ${props => props.theme.text};
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   &:hover {
     background-color: ${props => props.theme.hoverBackground};
   }
@@ -52,8 +51,28 @@ const ConversationItem = styled.div`
   `}
 `;
 
+const ConversationTitle = styled.div`
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const ConversationTimestamp = styled.div`
+  font-size: 0.8em;
+  color: ${props => props.theme.secondaryText};
+`;
+
 function Sidebar({ isCollapsed, theme }) {
-  const { conversations, selectedConversationId, selectConversation, api } = useAppContext();
+  const { conversations, selectConversation, selectedConversationId, api } = useAppContext();
+
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString();
+  };
+
+  const handleConversationClick = (id) => {
+    selectConversation(id);
+  };
 
   return (
     <SidebarContainer isCollapsed={isCollapsed} theme={theme}>
@@ -62,15 +81,19 @@ function Sidebar({ isCollapsed, theme }) {
       </NewConversationButton>
       {!isCollapsed && (
         <ConversationList>
-          {Object.entries(conversations).map(([id, name]) => (
+          {Object.values(conversations).map((conversation) => (
             <ConversationItem 
-              key={id} 
-              onClick={() => selectConversation(id)}
-              isSelected={id === selectedConversationId}
+              key={conversation.id} 
+              onClick={() => handleConversationClick(conversation.id)}
+              isSelected={conversation.id === selectedConversationId}
               theme={theme}
-              title={name}
             >
-              {name}
+              <ConversationTitle title={conversation.sentence}>
+                {conversation.sentence}
+              </ConversationTitle>
+              <ConversationTimestamp theme={theme}>
+                {formatTimestamp(conversation.timestamp)}
+              </ConversationTimestamp>
             </ConversationItem>
           ))}
         </ConversationList>
