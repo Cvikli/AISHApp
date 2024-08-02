@@ -19,7 +19,7 @@ const MessageHistory = styled.div`
   flex-grow: 1;
   overflow-y: auto;
   height: 0;
-  padding: 10px;
+  padding: 0;
   font-family: 'Arial', sans-serif;
   font-size: 14px;
   background-color: ${props => props.theme.chatBackground};

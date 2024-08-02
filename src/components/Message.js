@@ -3,9 +3,8 @@ import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
 
 const MessageContainer = styled.div`
-  margin-bottom: 8px;
+  margin: ${props => props.isUser ? '16px' : '0'};
   padding: 10px;
-  border-radius: 4px;
   overflow-wrap: break-word;
   word-wrap: break-word;
   word-break: break-word;
@@ -26,7 +25,6 @@ const StyledMarkdown = styled(ReactMarkdown)`
   code {
     background-color: ${props => props.theme.codeBackground};
     padding: 2px 4px;
-    border-radius: 4px;
     font-family: 'Courier New', Courier, monospace;
     white-space: pre-wrap;
     word-break: break-all;
@@ -35,7 +33,6 @@ const StyledMarkdown = styled(ReactMarkdown)`
   pre {
     background-color: ${props => props.theme.codeBackground};
     padding: 10px;
-    border-radius: 4px;
     overflow-x: auto;
     white-space: pre-wrap;
     word-break: break-all;
