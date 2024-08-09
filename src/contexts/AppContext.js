@@ -1,11 +1,10 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
-import { useAPI } from '../hooks/useAPI';
+import React, { createContext, useState, useEffect, useContext, useCallback, useMemo, useRef } from 'react';
+import { useAPI } from '../api';
 import { lightTheme, darkTheme } from '../theme';
 
 const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-  console.log('AppProvider rendering');
   const [conversations, setConversations] = useState({});
   const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -13,27 +12,31 @@ export const AppProvider = ({ children }) => {
   const [projectPath, setProjectPath] = useState("");
   const [messages, setMessages] = useState([]);
 
-  const theme = isDarkMode ? { ...darkTheme, name: 'dark' } : { ...lightTheme, name: 'light' };
+  const theme = isDarkMode ? darkTheme : lightTheme;
 
   const api = useAPI();
+  const initializeAppCalled = useRef(false);
+
+  const initializeApp = useCallback(async () => {
+    if (initializeAppCalled.current) return;
+    console.log('initializeApp called');
+    try {
+      const data = await api.initializeAIState();
+      setSelectedConversationId(data.conversation_id);
+      setConversations(data.available_conversations);
+      initializeAppCalled.current = true;
+    } catch (error) {
+      console.error('Failed to initialize AI state:', error);
+    }
+  }, [api]);
 
   useEffect(() => {
-    const initializeApp = async () => {
-      console.log('initializeApp called');
-      try {
-        const data = await api.initializeAIState();
-        setSelectedConversationId(data.conversation_id);
-        setConversations(data.available_conversations);
-      } catch (error) {
-        console.error('Failed to initialize AI state:', error);
-      }
-    };
     initializeApp();
   }, []);
 
   const selectConversation = useCallback(async (id) => {
     try {
-      const response = await api.selectConversation(id);
+      const response = await api.selectConversation({ conversation_id: id });
       if (response && response.status === 'success') {
         setSelectedConversationId(id);
         setMessages(response.history || []);
@@ -45,7 +48,9 @@ export const AppProvider = ({ children }) => {
 
   const startNewConversation = useCallback(async () => {
     try {
+      console.log("id")
       const response = await api.startNewConversation();
+      console.log(response)
       if (response && response.status === 'success') {
         const newConversation = {
           id: response.conversation_id,
@@ -69,8 +74,8 @@ export const AppProvider = ({ children }) => {
     setConversations(prevConversations => {
       const updatedConversation = {
         ...prevConversations[selectedConversationId],
-        messages: [...(prevConversations[selectedConversationId].messages || []), newMessage],
-        sentence: newMessage.role === 'user' ? newMessage.message.substring(0, 30) + '...' : prevConversations[selectedConversationId].sentence
+        messages: [...(prevConversations[selectedConversationId]?.messages || []), newMessage],
+        sentence: newMessage.role === 'user' ? newMessage.message.substring(0, 30) + '...' : prevConversations[selectedConversationId]?.sentence
       };
       return {
         ...prevConversations,
@@ -79,7 +84,7 @@ export const AppProvider = ({ children }) => {
     });
   }, [selectedConversationId]);
 
-  const value = {
+  const value = useMemo(() => ({
     conversations,
     setConversations,
     selectedConversationId,
@@ -97,7 +102,19 @@ export const AppProvider = ({ children }) => {
     selectConversation,
     startNewConversation,
     addMessage,
-  };
+  }), [
+    conversations,
+    selectedConversationId,
+    isCollapsed,
+    isDarkMode,
+    projectPath,
+    messages,
+    theme,
+    api,
+    selectConversation,
+    startNewConversation,
+    addMessage,
+  ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

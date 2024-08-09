@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
-import * as API from './API';
 import { ScrollbarStyle, Button } from './components/SharedStyles';
 import { MAX_TEXTAREA_HEIGHT } from './constants';
+import { useAPI } from './api';
+
 import Message from './components/Message';
 import SystemPrompt from './components/SystemPrompt';
 
@@ -77,7 +78,7 @@ function ChatComponent({ theme, conversationId, messages, setMessages }) {
       setIsTyping(true);
   
       try {
-        const data = await API.processMessage(inputValue, conversationId);
+        const data = await useAPI.processMessage(inputValue, conversationId);
         const newAIMessage = { role: 'ai', message: data.response, timestamp: new Date().toISOString() };
         setMessages(prevMessages => [...prevMessages, newAIMessage]);
       } catch (error) {
