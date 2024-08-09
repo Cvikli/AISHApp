@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Button } from './SharedStyles';
 
@@ -49,20 +49,6 @@ const ButtonGroup = styled.div`
   align-items: center;
 `;
 
-const FolderSelectButton = styled(Button)`
-  max-width: 200px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const FolderIcon = styled.span`
-  margin-right: 5px;
-`;
-
 const RefreshButton = styled(Button)`
   font-size: 18px;
 `;
@@ -75,51 +61,39 @@ const ThemeToggle = styled.button`
   padding: 5px 10px;
   color: ${props => props.theme.text};
 `;
+const PathInput = styled.input`
+  width: 200px;
+  padding: 5px;
+  margin-right: 10px;
+  border: 1px solid ${props => props.theme.borderColor};
+  background-color: ${props => props.theme.inputBackground};
+  color: ${props => props.theme.text};
+`;
 
 function Header({ 
   theme,
   toggleSidebar, 
   toggleTheme, 
-  handleFolderSelect, 
   refreshProject, 
   updateSystemPrompt, 
   projectPath,
+  setProjectPath,
   isCollapsed,
   selectedConversationId
 }) {
-  const selectFolder = async () => {
-    try {
-      // Check if the browser supports the File System Access API
-      if ('showDirectoryPicker' in window) {
-        const directoryHandle = await window.showDirectoryPicker();
-        console.log('Directory Handle:', directoryHandle);
-        
-        // Get the name of the directory
-        const name = directoryHandle.name;
-        console.log('Directory Name:', name);
-        
-        // List files in the directory
-        for await (const entry of directoryHandle.values()) {
-          console.log(entry.kind, entry.name);
-        }
 
-        // Construct a relative path-like string
-        let pathParts = [];
-        let currentHandle = directoryHandle;
-        while (currentHandle !== null) {
-          pathParts.unshift(currentHandle.name);
-          currentHandle = await currentHandle.getParent();
-        }
-        console.log('Directory pathParts:', pathParts);
-        const relativePath = pathParts.join('/');
-        console.log('Relative Path:', relativePath);
-        // handleFolderSelect(path);
-      } else {
-        // Fallback for browsers that don't support showDirectoryPicker
-        alert("Your browser doesn't support folder selection. Please use a modern browser like Chrome or Edge.");
-      }
-    } catch (err) {
-      console.error("Error selecting folder:", err);
+  const [inputPath, setInputPath] = useState(projectPath);
+
+  const handlePathChange = (e) => {
+    setInputPath(e.target.value);
+  };
+
+  const handleRefresh = async () => {
+    try {
+      await setProjectPath(inputPath);
+      await refreshProject();
+    } catch (error) {
+      console.error("Error refreshing project:", error);
     }
   };
 
@@ -131,21 +105,25 @@ function Header({
       <Title theme={theme}>
         KODA
         <ConversationId theme={theme}>
-          {selectedConversationId ? `#${selectedConversationId}` : ''}
+          {selectedConversationId ? `${selectedConversationId}` : ''}
         </ConversationId>
       </Title>
       <ButtonGroup>
-        <FolderSelectButton onClick={selectFolder}>
-          <FolderIcon>📁</FolderIcon>
-          {projectPath ? projectPath : "Select Project"}
-        </FolderSelectButton>
-        <RefreshButton onClick={refreshProject}>🔄</RefreshButton>
+        <PathInput 
+          value={inputPath}
+          onChange={handlePathChange}
+          placeholder="Enter project path"
+          theme={theme}
+        />
+        <RefreshButton onClick={() => console.log(handleRefresh())}>🔄</RefreshButton>
         <Button onClick={updateSystemPrompt}>Update System Prompt</Button>
         <ThemeToggle onClick={toggleTheme} theme={theme}>
           {theme.name === 'dark' ? '☀️' : '🌙'}
         </ThemeToggle>
       </ButtonGroup>
     </HeaderContainer>
+
+
   );
 }
 

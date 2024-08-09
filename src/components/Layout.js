@@ -34,35 +34,19 @@ const ChatWrapper = styled.div`
 const Layout = () => {
   const {
     theme,
+    setIsDarkMode,
     isCollapsed,
     selectedConversationId,
-    projectPath,
     messages,
     setMessages,
     setIsCollapsed,
-    setIsDarkMode,
+    projectPath,
     setProjectPath,
     api,
   } = useAppContext();
 
-  const sidebarWidth = isCollapsed ? 36 : 250;
-
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
   const toggleTheme = () => setIsDarkMode(prev => !prev);
-
-  const handleFolderSelect = async () => {
-    try {
-      console.log(window.electron)
-      const result = await window.electron.openFolder();
-      if (!result.canceled && result.filePaths.length > 0) {
-        const path = result.filePaths[0];
-        setProjectPath(path);
-        await api.setPath(path);
-      }
-    } catch (error) {
-      console.error('Error selecting folder:', error);
-    }
-  };
 
   return (
     <AppContainer>
@@ -73,10 +57,10 @@ const Layout = () => {
             theme={theme}
             toggleSidebar={toggleSidebar}
             toggleTheme={toggleTheme}
-            handleFolderSelect={handleFolderSelect}
             refreshProject={api.refreshProject}
             updateSystemPrompt={api.updateSystemPrompt}
             projectPath={projectPath}
+            setProjectPath={setProjectPath}
             isCollapsed={isCollapsed}
             selectedConversationId={selectedConversationId}
           />
