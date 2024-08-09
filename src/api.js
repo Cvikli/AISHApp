@@ -5,6 +5,7 @@ const BASE_URL = 'http://localhost:8001/api';
 
 const apiCall = async (endpoint, method = 'get', data = null) => {
   console.log(`Making API call to ${endpoint} with method ${method}`);
+  console.log('Data being sent:', JSON.stringify(data, null, 2));
   try {
     const response = await axios[method](`${BASE_URL}/${endpoint}`, data);
     console.log(`API response for ${endpoint}:`, response.data);
@@ -24,6 +25,7 @@ export const useAPI = () => {
 
   const createApiMethod = useCallback((endpoint, method) => async (data = null) => {
     console.log(`Calling API method: ${endpoint}`);
+    console.log('Data being sent:', JSON.stringify(data, null, 2));
     setIsLoading(true);
     setError(null);
     try {
@@ -41,7 +43,10 @@ export const useAPI = () => {
 
   const api = useMemo(() => ({
     initializeAIState: createApiMethod('initialize', 'get'),
-    startNewConversation: createApiMethod('new_conversation', 'post'),
+    startNewConversation: (...args) => {
+      console.log("startNewConversation API method called"); // Add this line
+      return createApiMethod('new_conversation', 'post')(...args);
+    },
     selectConversation: createApiMethod('select_conversation', 'post'),
     setPath: createApiMethod('set_path', 'post'),
     refreshProject: createApiMethod('refresh_project', 'post'),

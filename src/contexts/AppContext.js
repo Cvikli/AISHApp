@@ -47,10 +47,11 @@ export const AppProvider = ({ children }) => {
   }, [api]);
 
   const startNewConversation = useCallback(async () => {
+    console.log("startNewConversation function called"); // Add this line
     try {
-      console.log("id")
+      console.log("Starting new conversation");
       const response = await api.startNewConversation();
-      console.log(response)
+      console.log("New conversation response:", response);
       if (response && response.status === 'success') {
         const newConversation = {
           id: response.conversation_id,
@@ -58,6 +59,7 @@ export const AppProvider = ({ children }) => {
           sentence: "New Conversation",
           messages: []
         };
+        console.log("New conversation object:", newConversation);
         setConversations(prevConversations => ({
           ...prevConversations,
           [response.conversation_id]: newConversation
