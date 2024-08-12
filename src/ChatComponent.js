@@ -56,6 +56,7 @@ function ChatComponent({ theme, conversationId, messages, setMessages }) {
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
   const messageEndRef = useRef(null);
   const textAreaRef = useRef(null);
+  const api = useAPI();
 
   useEffect(() => {
     if (messageEndRef.current && !isSystemPromptOpen) {
@@ -79,6 +80,7 @@ function ChatComponent({ theme, conversationId, messages, setMessages }) {
   
       try {
         const data = await useAPI.processMessage(inputValue, conversationId);
+        const data = await api.processMessage({ message: inputValue, conversation_id: conversationId });
         const newAIMessage = { role: 'ai', message: data.response, timestamp: new Date().toISOString() };
         setMessages(prevMessages => [...prevMessages, newAIMessage]);
       } catch (error) {
