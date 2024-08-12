@@ -74,6 +74,11 @@ function Sidebar({ isCollapsed, theme }) {
     selectConversation(id);
   };
 
+  // Sort conversations by timestamp in descending order
+  const sortedConversations = Object.values(conversations).sort((a, b) => 
+    new Date(b.timestamp) - new Date(a.timestamp)
+  );
+
   return (
     <SidebarContainer isCollapsed={isCollapsed} theme={theme}>
       <NewConversationButton onClick={api.startNewConversation} theme={theme}>
@@ -81,7 +86,7 @@ function Sidebar({ isCollapsed, theme }) {
       </NewConversationButton>
       {!isCollapsed && (
         <ConversationList>
-          {Object.values(conversations).map((conversation) => (
+          {sortedConversations.map((conversation) => (
             <ConversationItem 
               key={conversation.id} 
               onClick={() => handleConversationClick(conversation.id)}
