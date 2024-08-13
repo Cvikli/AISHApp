@@ -79,8 +79,10 @@ function ChatComponent({ theme, conversationId, messages, setMessages }) {
       setIsTyping(true);
   
       try {
-        const data = await useAPI.processMessage(inputValue, conversationId);
+        console.log('Sending message:', inputValue);
+        console.log('Conversation ID:', conversationId);
         const data = await api.processMessage({ message: inputValue, conversation_id: conversationId });
+        console.log('API response:', data);
         const newAIMessage = { role: 'ai', message: data.response, timestamp: new Date().toISOString() };
         setMessages(prevMessages => [...prevMessages, newAIMessage]);
       } catch (error) {

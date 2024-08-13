@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
 
 const BASE_URL = 'http://localhost:8001/api';
+const STREAM_URL = 'http://localhost:8080';
 
 const apiCall = async (endpoint, method = 'get', data = null) => {
   console.log(`Making API call to ${endpoint} with method ${method}`);
@@ -15,6 +16,37 @@ const apiCall = async (endpoint, method = 'get', data = null) => {
     return response.data;
   } catch (error) {
     console.error(`Error in ${endpoint}:`, error);
+    throw error;
+  }
+};
+
+const processMessageStream = async (message) => {
+  try {
+    const response = await fetch(`${STREAM_URL}/stream/process_message`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ new_message: message }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    let result = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      result += new TextDecoder().decode(value);
+    }
+
+    console.log('Full response:', result);
+    return result;
+  } catch (error) {
+    console.error('Error:', error);
     throw error;
   }
 };
@@ -43,15 +75,28 @@ export const useAPI = () => {
 
   const api = useMemo(() => ({
     initializeAIState: createApiMethod('initialize', 'get'),
-    startNewConversation: (...args) => {
-      console.log("startNewConversation API method called"); // Add this line
-      return createApiMethod('new_conversation', 'post')(...args);
-    },
+    startNewConversation: createApiMethod('new_conversation', 'post'),
     selectConversation: createApiMethod('select_conversation', 'post'),
     setPath: createApiMethod('set_path', 'post'),
     refreshProject: createApiMethod('refresh_project', 'post'),
     updateSystemPrompt: createApiMethod('update_system_prompt', 'get'),
-    processMessage: createApiMethod('process_message', 'post'),
+    processMessagePOST: createApiMethod('process_message', 'post'),
+    processMessage: async (data) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        console.log("Processing message:", data.message);
+        const result = await processMessageStream(data.message);
+        console.log("Processed message result:", result);
+        return { status: 'success', response: result };
+      } catch (err) {
+        console.error(`Error in processMessage:`, err);
+        setError(err.message);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
   }), [createApiMethod]);
 
   return useMemo(() => ({
