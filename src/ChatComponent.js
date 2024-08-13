@@ -79,7 +79,6 @@ function ChatComponent({ theme, conversationId, messages, setMessages }) {
       setIsTyping(true);
   
       try {
-        const data = await useAPI.processMessage(inputValue, conversationId);
         const data = await api.processMessage({ message: inputValue, conversation_id: conversationId });
         const newAIMessage = { role: 'ai', message: data.response, timestamp: new Date().toISOString() };
         setMessages(prevMessages => [...prevMessages, newAIMessage]);
