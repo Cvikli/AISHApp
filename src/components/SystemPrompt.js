@@ -2,12 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 
 const SystemPromptContainer = styled.div`
-  background-color: ${props => props.theme.systemPromptBackground || '#f0f0f0'};
-  border: 1px solid ${props => props.theme.borderColor};
+  background-color: ${props => props.theme.name === 'dark' ? '#2a2a2a' : '#f0f0f0'};
+  border: 1px solid ${props => props.theme.name === 'dark' ? '#444' : props.theme.borderColor};
   border-radius: 4px;
   margin: 10px;
   padding: 10px;
-  color: ${props => props.theme.systemPromptText || '#333'};
+  color: ${props => props.theme.name === 'dark' ? '#e0e0e0' : '#333'};
   font-family: 'Courier New', monospace;
 `;
 
@@ -16,22 +16,36 @@ const ToggleButton = styled.button`
   border: none;
   cursor: pointer;
   font-size: 16px;
-  color: ${props => props.theme.systemPromptText || '#333'};
+  color: ${props => props.theme.name === 'dark' ? '#0084ff' : '#0066cc'};
   margin-bottom: 5px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: ${props => props.theme.name === 'dark' ? '#3a3a3a' : '#e0e0e0'};
+  }
 `;
 
 const SystemPromptContent = styled.textarea`
   width: 100%;
   min-height: 100px;
   resize: vertical;
-  background-color: transparent;
-  border: none;
-  color: inherit;
+  background-color: ${props => props.theme.name === 'dark' ? '#1e1e1e' : '#ffffff'};
+  border: 1px solid ${props => props.theme.name === 'dark' ? '#444' : '#ccc'};
+  border-radius: 4px;
+  color: ${props => props.theme.name === 'dark' ? '#e0e0e0' : '#333'};
   font-family: inherit;
-  font-size: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 8px;
+  margin-top: 5px;
   outline: none;
-  padding: 0;
-  margin: 0;
+  transition: border-color 0.3s;
+
+  &:focus {
+    border-color: ${props => props.theme.name === 'dark' ? '#0084ff' : '#0066cc'};
+  }
 `;
 
 function SystemPrompt({ message, theme, onUpdate, isOpen, setIsOpen }) {

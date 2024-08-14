@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Button } from './SharedStyles';
+import FolderStructureModal from './FolderStructureModal';
 
 const HeaderContainer = styled.div`
   display: flex;
@@ -61,6 +62,12 @@ const ThemeToggle = styled.button`
   padding: 5px 10px;
   color: ${props => props.theme.text};
 `;
+
+const PathInputContainer = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
 const PathInput = styled.input`
   width: 200px;
   padding: 5px;
@@ -68,6 +75,11 @@ const PathInput = styled.input`
   border: 1px solid ${props => props.theme.borderColor};
   background-color: ${props => props.theme.inputBackground};
   color: ${props => props.theme.text};
+`;
+
+const FolderButton = styled(Button)`
+  padding: 5px 10px;
+  margin-right: 10px;
 `;
 
 function Header({ 
@@ -81,8 +93,8 @@ function Header({
   isCollapsed,
   selectedConversationId
 }) {
-
   const [inputPath, setInputPath] = useState(projectPath);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handlePathChange = (e) => {
     setInputPath(e.target.value);
@@ -97,6 +109,14 @@ function Header({
     }
   };
 
+  const openModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
   return (
     <HeaderContainer theme={theme}>
       <CollapseButton onClick={toggleSidebar} theme={theme}>
@@ -109,21 +129,29 @@ function Header({
         </ConversationId>
       </Title>
       <ButtonGroup>
-        <PathInput 
-          value={inputPath}
-          onChange={handlePathChange}
-          placeholder="Enter project path"
-          theme={theme}
-        />
-        <RefreshButton onClick={() => console.log(handleRefresh())}>🔄</RefreshButton>
+        <PathInputContainer>
+          <PathInput 
+            value={inputPath}
+            onChange={handlePathChange}
+            placeholder="Enter project path"
+            theme={theme}
+          />
+          <FolderButton onClick={openModal}>📁</FolderButton>
+        </PathInputContainer>
+        <RefreshButton onClick={handleRefresh}>🔄</RefreshButton>
         <Button onClick={updateSystemPrompt}>Update System Prompt</Button>
         <ThemeToggle onClick={toggleTheme} theme={theme}>
           {theme.name === 'dark' ? '☀️' : '🌙'}
         </ThemeToggle>
       </ButtonGroup>
+      <FolderStructureModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        theme={theme}
+        projectPath={projectPath}
+        setProjectPath={setProjectPath}
+      />
     </HeaderContainer>
-
-
   );
 }
 

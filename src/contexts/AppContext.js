@@ -47,7 +47,7 @@ export const AppProvider = ({ children }) => {
   }, [api]);
 
   const startNewConversation = useCallback(async () => {
-    console.log("startNewConversation function called"); // Add this line
+    console.log("startNewConversation function called");
     try {
       console.log("Starting new conversation");
       const response = await api.startNewConversation();
@@ -86,6 +86,15 @@ export const AppProvider = ({ children }) => {
     });
   }, [selectedConversationId]);
 
+  const updateProjectPath = useCallback(async (newPath) => {
+    try {
+      await api.setPath({ path: newPath });
+      setProjectPath(newPath);
+    } catch (error) {
+      console.error('Error updating project path:', error);
+    }
+  }, [api]);
+
   const value = useMemo(() => ({
     conversations,
     setConversations,
@@ -96,7 +105,7 @@ export const AppProvider = ({ children }) => {
     isDarkMode,
     setIsDarkMode,
     projectPath,
-    setProjectPath,
+    setProjectPath: updateProjectPath,
     messages,
     setMessages,
     theme,
@@ -116,6 +125,7 @@ export const AppProvider = ({ children }) => {
     selectConversation,
     startNewConversation,
     addMessage,
+    updateProjectPath,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

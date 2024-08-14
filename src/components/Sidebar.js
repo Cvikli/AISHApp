@@ -57,21 +57,15 @@ const ConversationTitle = styled.div`
   text-overflow: ellipsis;
 `;
 
-const ConversationTimestamp = styled.div`
-  font-size: 0.8em;
-  color: ${props => props.theme.secondaryText};
-`;
-
 function Sidebar({ isCollapsed, theme }) {
   const { conversations, selectConversation, selectedConversationId, api } = useAppContext();
 
-  const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString();
-  };
-
   const handleConversationClick = (id) => {
     selectConversation(id);
+  };
+
+  const formatTitle = (title) => {
+    return title.replace(/_/g, ' ');
   };
 
   // Sort conversations by timestamp in descending order
@@ -93,12 +87,9 @@ function Sidebar({ isCollapsed, theme }) {
               isSelected={conversation.id === selectedConversationId}
               theme={theme}
             >
-              <ConversationTitle title={conversation.sentence}>
-                {conversation.sentence}
+              <ConversationTitle title={formatTitle(conversation.sentence)}>
+                {formatTitle(conversation.sentence)}
               </ConversationTitle>
-              <ConversationTimestamp theme={theme}>
-                {formatTimestamp(conversation.timestamp)}
-              </ConversationTimestamp>
             </ConversationItem>
           ))}
         </ConversationList>
