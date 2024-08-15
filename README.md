@@ -28,26 +28,13 @@ This project is a React-based web interface for an AI-powered shell environment,
 2. Install dependencies:
    ```
    npm install
+   apt install byobu
    ```
-3. Start the development server:
+3. Start the backend server and the frontend immediately:
    ```
-   npm start
+   ./run.sh
    ```
 4. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-## Usage
-
-- Use the chat interface to interact with the AI
-- Toggle between dark and light modes
-- Manage conversations using the sidebar
-- Customize the system prompt
-- Set and refresh the project path
-
-## Available Scripts
-
-- `npm start`: Runs the app in development mode
-- `npm test`: Launches the test runner
-- `npm run build`: Builds the app for production
 
 ## Contributing
 
