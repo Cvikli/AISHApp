@@ -68,7 +68,7 @@ const ConversationList = styled(ScrollableDiv)`
 `;
 
 const ConversationItem = styled.div`
-  padding: 8px 10px;
+  padding: 4px 8px;
   cursor: pointer;
   color: ${props => props.theme.text};  
   transition: background-color 0.05s ease;

@@ -5,6 +5,7 @@ import { MAX_TEXTAREA_HEIGHT } from './constants';
 import { useAppContext } from './contexts/AppContext';
 import Message from './components/Message';
 import SystemPrompt from './components/SystemPrompt';
+import { streamProcessMessage } from './streamAPI';
 
 const ChatContainer = styled.div`
   display: flex;
@@ -82,12 +83,12 @@ function ChatComponent() {
     conversations,
     selectedConversationId,
     addMessage,
-    processMessage,
   } = useAppContext();
 
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
+  const [streamedContent, setStreamedContent] = useState('');
   const messageEndRef = useRef(null);
   const textAreaRef = useRef(null);
 
@@ -100,7 +101,7 @@ function ChatComponent() {
     if (messageEndRef.current && !isSystemPromptOpen) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [displayedMessages, isSystemPromptOpen]);
+  }, [displayedMessages, isSystemPromptOpen, streamedContent]);
 
   useEffect(() => {
     if (textAreaRef.current) {
@@ -114,14 +115,22 @@ function ChatComponent() {
       const userMessage = { role: 'user', message: inputValue, timestamp: new Date().toISOString() };
       setIsTyping(true);
       setInputValue('');
+      setStreamedContent('');
   
       addMessage(userMessage);
   
       try {
-        await processMessage(inputValue);
+        await streamProcessMessage(
+          inputValue,
+          (content) => setStreamedContent(prev => prev + content),
+          (finalContent) => {
+            addMessage({ role: 'assistant', message: finalContent, timestamp: new Date().toISOString() });
+            setStreamedContent('');
+            setIsTyping(false);
+          }
+        );
       } catch (error) {
         console.error('Error:', error);
-      } finally {
         setIsTyping(false);
       }
     }
@@ -150,7 +159,13 @@ function ChatComponent() {
             theme={theme}
           />
         ))}
-        {isTyping && <Message message="AI is typing..." isUser={false} theme={theme} />}
+        {isTyping && (
+          <Message
+            message={streamedContent || "AI is typing..."}
+            isUser={false}
+            theme={theme}
+          />
+        )}
         <div ref={messageEndRef} />
       </MessageHistory>
       <InputContainer theme={theme}>
