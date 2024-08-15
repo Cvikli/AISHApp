@@ -5,7 +5,7 @@ import { MAX_TEXTAREA_HEIGHT } from './constants';
 import { useAppContext } from './contexts/AppContext';
 import Message from './components/Message';
 import SystemPrompt from './components/SystemPrompt';
-import { streamProcessMessage } from './streamAPI';
+import { streamProcessMessage } from './APIstream';
 
 const ChatContainer = styled.div`
   display: flex;

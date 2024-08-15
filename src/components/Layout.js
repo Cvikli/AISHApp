@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { useAppContext } from '../contexts/AppContext';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import ChatComponent from '../ChatComponent';
+import ChatComponent from '../Chat';
 
 const AppContainer = styled.div`
   display: flex;

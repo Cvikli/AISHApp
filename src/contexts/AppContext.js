@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useMemo, useRef } from 'react';
-import { useAPI } from '../api';
+import { useAPI } from '../API';
 import { lightTheme, darkTheme } from '../theme';
 
 const AppContext = createContext();
