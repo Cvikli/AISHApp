@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
-import { ScrollbarStyle, Button } from './components/SharedStyles';
+import { ScrollableDiv, Button } from './components/SharedStyles';
 import { MAX_TEXTAREA_HEIGHT } from './constants';
 import { useAPI } from './api';
-
+import { useAppContext } from './contexts/AppContext';
 import Message from './components/Message';
 import SystemPrompt from './components/SystemPrompt';
 
@@ -12,51 +12,91 @@ const ChatContainer = styled.div`
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  background-color: ${props => props.theme.backgroundColor};
+  color: ${props => props.theme.textColor};
 `;
 
-const MessageHistory = styled.div`
+const MessageHistory = styled(ScrollableDiv)`
   flex: 1;
   overflow-y: auto;
   padding: 0px;
-  background-color: ${props => props.theme.chatBackground};
-  ${ScrollbarStyle}
+
+  /* Additional Chrome-specific styles */
+  &::-webkit-scrollbar-button {
+    display: none !important;
+  }
+
+  &::-webkit-scrollbar-button:vertical:start,
+  &::-webkit-scrollbar-button:vertical:end,
+  &::-webkit-scrollbar-button:horizontal:start,
+  &::-webkit-scrollbar-button:horizontal:end {
+    display: none !important;
+  }
 `;
 
 const InputContainer = styled.div`
   display: flex;
   padding: 0px;
-  background-color: ${props => props.theme.background};
+  background-color: ${props => props.theme.backgroundColor};
+  border-top: 1px solid ${props => props.theme.borderColor};
+`;
+
+const InputWrapper = styled.div`
+  display: flex;
+  flex-grow: 1;
+  align-items: center;
+  background-color: ${props => props.theme.backgroundColor};
+  border: 1px solid ${props => props.theme.borderColor};
+`;
+
+const Prompt = styled.span`
+  color: ${props => props.theme.textColor};
+  padding: 5px;
+  font-size: 14px;
 `;
 
 const TextArea = styled.textarea`
   flex-grow: 1;
-  padding: 10px;
-  border: 1px solid ${props => props.theme.borderColor};
-  border-radius: 0px;
+  padding: 5px;
+  border: none;
   resize: none;
-  min-height: 40px;
+  min-height: 24px;
   max-height: ${MAX_TEXTAREA_HEIGHT}px;
   overflow-y: auto;
   font-family: inherit;
   font-size: 14px;
   line-height: 1.2;  
-  border-right: 1px solid ${props => props.theme.borderColor};
-  background-color: ${props => props.theme.inputBackground};
-  color: ${props => props.theme.text};
-  ${ScrollbarStyle}
+  background-color: transparent;
+  color: white;
+
+  &:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 0px #0f0;
+  }
 `;
 
 const SendButton = styled(Button)`
-  height: auto;
+  background-color: transparent;
+  color: ${props => props.theme.textColor};
+  border: 1px solid ${props => props.theme.borderColor};
+  font-size: 14px;
+  padding: 5px 10px;
+
+  &:hover {
+    background-color: ${props => props.theme.hoverColor};
+  }
 `;
 
-function ChatComponent({ theme, conversationId, messages, setMessages }) {
+function ChatComponent({ theme, conversationId, messages, setMessages, refreshProject }) {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
   const messageEndRef = useRef(null);
   const textAreaRef = useRef(null);
   const api = useAPI();
+  const { addMessage } = useAppContext();
 
   useEffect(() => {
     if (messageEndRef.current && !isSystemPromptOpen) {
@@ -73,18 +113,20 @@ function ChatComponent({ theme, conversationId, messages, setMessages }) {
   
   const handleSend = async () => {
     if (inputValue.trim()) {
-      const newUserMessage = { role: 'user', message: inputValue, timestamp: new Date().toISOString() };
-      setMessages(prevMessages => [...prevMessages, newUserMessage]);
-      setInputValue('');
+      const userMessage = { role: 'user', message: inputValue, timestamp: new Date().toISOString() };
       setIsTyping(true);
+      setInputValue('');
+  
+      addMessage(userMessage);
   
       try {
         const data = await api.processMessage({ message: inputValue, conversation_id: conversationId });
-        const newAIMessage = { role: 'ai', message: data.response, timestamp: new Date().toISOString() };
-        setMessages(prevMessages => [...prevMessages, newAIMessage]);
+        const aiMessage = { role: 'ai', message: data.response, timestamp: new Date().toISOString() };
+        addMessage(aiMessage);
       } catch (error) {
         console.error('Error:', error);
-        setMessages(prevMessages => [...prevMessages, { role: 'ai', message: 'Sorry, I encountered an error.', timestamp: new Date().toISOString() }]);
+        const errorMessage = { role: 'ai', message: 'Sorry, I encountered an error.', timestamp: new Date().toISOString() };
+        addMessage(errorMessage);
       } finally {
         setIsTyping(false);
       }
@@ -114,7 +156,7 @@ function ChatComponent({ theme, conversationId, messages, setMessages }) {
   const otherMessages = messages.filter(msg => msg.role !== 'system');
 
   return (
-    <ChatContainer>
+    <ChatContainer theme={theme}>
       <MessageHistory theme={theme}>
         {systemPrompt && (
           <SystemPrompt
@@ -123,6 +165,7 @@ function ChatComponent({ theme, conversationId, messages, setMessages }) {
             onUpdate={handleSystemPromptUpdate}
             isOpen={isSystemPromptOpen}
             setIsOpen={setIsSystemPromptOpen}
+            refreshProject={refreshProject}
           />
         )}
         {otherMessages.map((message, index) => (
@@ -138,16 +181,19 @@ function ChatComponent({ theme, conversationId, messages, setMessages }) {
         <div ref={messageEndRef} />
       </MessageHistory>
       <InputContainer theme={theme}>
-        <TextArea 
-          ref={textAreaRef}
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyPress}
-          placeholder="Type your message here... (Press Shift+Enter for new line)"
-          rows={1}
-          theme={theme}
-        />
-        <SendButton onClick={handleSend}>Send</SendButton>
+        <InputWrapper theme={theme}>
+          <Prompt theme={theme}>$</Prompt>
+          <TextArea 
+            ref={textAreaRef}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyPress}
+            placeholder="Enter command..."
+            rows={1}
+            theme={theme}
+          />
+        </InputWrapper>
+        <SendButton onClick={handleSend} theme={theme}>Send</SendButton>
       </InputContainer>
     </ChatContainer>
   );

@@ -3,23 +3,25 @@ import styled from 'styled-components';
 import { Button } from './SharedStyles';
 import FolderStructureModal from './FolderStructureModal';
 
+export const HEADER_HEIGHT = 36; // Changed to a number
+
 const HeaderContainer = styled.div`
   display: flex;
   align-items: center;
-  height: 36px;  
+  height: ${HEADER_HEIGHT}px; // Apply the unit here
   border-bottom: 1px solid ${props => props.theme.borderColor};
-  background-color: ${props => props.theme.background};
+  background-color: ${props => props.theme.backgroundColor};
 `;
 
 const CollapseButton = styled.button`
   background: none;
-  width: 36px;
-  height: 36px;
+  width: ${HEADER_HEIGHT}px;
+  height: ${HEADER_HEIGHT}px;
   border: none;
   font-size: 18px;
   cursor: pointer;
   margin: 0px 4px;
-  color: ${props => props.theme.text};
+  color: ${props => props.theme.textColor};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -30,7 +32,7 @@ const Title = styled.h1`
   font-size: 22px;
   margin: 0 14px;
   padding-top: 5px;
-  line-height: 36px;
+  line-height: ${HEADER_HEIGHT}px;
   color: ${props => props.theme.text};
   display: flex;
   align-items: center;
@@ -50,17 +52,13 @@ const ButtonGroup = styled.div`
   align-items: center;
 `;
 
-const RefreshButton = styled(Button)`
-  font-size: 18px;
-`;
-
 const ThemeToggle = styled.button`
   background: none;
   border: none;
   font-size: 24px;
   cursor: pointer;
   padding: 5px 10px;
-  color: ${props => props.theme.text};
+  color: ${props => props.theme.textColor};
 `;
 
 const PathInputContainer = styled.div`
@@ -74,7 +72,7 @@ const PathInput = styled.input`
   margin-right: 10px;
   border: 1px solid ${props => props.theme.borderColor};
   background-color: ${props => props.theme.inputBackground};
-  color: ${props => props.theme.text};
+  color: ${props => props.theme.textColor};
 `;
 
 const FolderButton = styled(Button)`
@@ -86,8 +84,6 @@ function Header({
   theme,
   toggleSidebar, 
   toggleTheme, 
-  refreshProject, 
-  updateSystemPrompt, 
   projectPath,
   setProjectPath,
   isCollapsed,
@@ -100,15 +96,6 @@ function Header({
     setInputPath(e.target.value);
   };
 
-  const handleRefresh = async () => {
-    try {
-      await setProjectPath(inputPath);
-      await refreshProject();
-    } catch (error) {
-      console.error("Error refreshing project:", error);
-    }
-  };
-
   const openModal = () => {
     setIsModalOpen(true);
   };
@@ -117,13 +104,18 @@ function Header({
     setIsModalOpen(false);
   };
 
+  const handleSetProjectPath = async (newPath) => {
+    await setProjectPath(newPath);
+    setInputPath(newPath);
+  };
+
   return (
     <HeaderContainer theme={theme}>
       <CollapseButton onClick={toggleSidebar} theme={theme}>
         {isCollapsed ? '▶' : '◀'}
       </CollapseButton>
       <Title theme={theme}>
-        KODA
+        ORION
         <ConversationId theme={theme}>
           {selectedConversationId ? `${selectedConversationId}` : ''}
         </ConversationId>
@@ -138,8 +130,6 @@ function Header({
           />
           <FolderButton onClick={openModal}>📁</FolderButton>
         </PathInputContainer>
-        <RefreshButton onClick={handleRefresh}>🔄</RefreshButton>
-        <Button onClick={updateSystemPrompt}>Update System Prompt</Button>
         <ThemeToggle onClick={toggleTheme} theme={theme}>
           {theme.name === 'dark' ? '☀️' : '🌙'}
         </ThemeToggle>
@@ -149,7 +139,7 @@ function Header({
         onClose={closeModal}
         theme={theme}
         projectPath={projectPath}
-        setProjectPath={setProjectPath}
+        setProjectPath={handleSetProjectPath}
       />
     </HeaderContainer>
   );

@@ -11,6 +11,7 @@ export const AppProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [projectPath, setProjectPath] = useState("");
   const [messages, setMessages] = useState([]);
+  const [systemPrompt, setSystemPrompt] = useState("");
 
   const theme = isDarkMode ? darkTheme : lightTheme;
 
@@ -24,6 +25,14 @@ export const AppProvider = ({ children }) => {
       const data = await api.initializeAIState();
       setSelectedConversationId(data.conversation_id);
       setConversations(data.available_conversations);
+      setSystemPrompt(data.system_prompt);
+      if (data.history && data.history.length > 0) {
+        setMessages(data.history);
+      } else {
+        // If no history, add the system prompt from the API
+        const apiSystemPrompt = { role: 'system', message: data.system_prompt, timestamp: new Date().toISOString() };
+        setMessages([apiSystemPrompt]);
+      }
       initializeAppCalled.current = true;
     } catch (error) {
       console.error('Failed to initialize AI state:', error);
@@ -53,23 +62,25 @@ export const AppProvider = ({ children }) => {
       const response = await api.startNewConversation();
       console.log("New conversation response:", response);
       if (response && response.status === 'success') {
+        const apiSystemPrompt = { role: 'system', message: systemPrompt, timestamp: new Date().toISOString() };
         const newConversation = {
           id: response.conversation_id,
           timestamp: new Date().toISOString(),
           sentence: "New Conversation",
-          messages: []
+          messages: [apiSystemPrompt]
         };
         console.log("New conversation object:", newConversation);
         setConversations(prevConversations => ({
           ...prevConversations,
           [response.conversation_id]: newConversation
         }));
+        setMessages([apiSystemPrompt]);
         await selectConversation(response.conversation_id);
       }
     } catch (error) {
       console.error('Error starting new conversation:', error);
     }
-  }, [api, selectConversation]);
+  }, [api, selectConversation, systemPrompt]);
 
   const addMessage = useCallback((newMessage) => {
     setMessages(prevMessages => [...prevMessages, newMessage]);
@@ -113,6 +124,8 @@ export const AppProvider = ({ children }) => {
     selectConversation,
     startNewConversation,
     addMessage,
+    systemPrompt,
+    setSystemPrompt,
   }), [
     conversations,
     selectedConversationId,
@@ -126,6 +139,7 @@ export const AppProvider = ({ children }) => {
     startNewConversation,
     addMessage,
     updateProjectPath,
+    systemPrompt,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

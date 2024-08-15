@@ -1,6 +1,8 @@
 const commonStyles = {
-  buttonBackground: '#0084ff',
-  buttonText: 'white',
+  textColor: '#0f0',
+  backgroundColor: '#000',
+  borderColor: '#0f0',
+  hoverColor: '#030',
 };
 
 export const lightTheme = {

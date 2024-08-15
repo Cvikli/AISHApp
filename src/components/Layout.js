@@ -57,8 +57,6 @@ const Layout = () => {
             theme={theme}
             toggleSidebar={toggleSidebar}
             toggleTheme={toggleTheme}
-            refreshProject={api.refreshProject}
-            updateSystemPrompt={api.updateSystemPrompt}
             projectPath={projectPath}
             setProjectPath={setProjectPath}
             isCollapsed={isCollapsed}
@@ -71,6 +69,7 @@ const Layout = () => {
             conversationId={selectedConversationId}          
             messages={messages}
             setMessages={setMessages}
+            refreshProject={api.refreshProject}
           />
         </ChatWrapper>
       </MainContent>

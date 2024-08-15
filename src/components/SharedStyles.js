@@ -11,24 +11,59 @@ export const Button = styled.button`
   font-size: 16px;
 `;
 
-export const ScrollbarStyle = `
+export const ScrollableDiv = styled.div`
   scrollbar-width: thin;
-  scrollbar-color: #6b6b6b #3a3a3a;
+  scrollbar-color: ${props => props.theme.textColor} ${props => props.theme.backgroundColor};
 
   &::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
+    height: 10px;
   }
 
   &::-webkit-scrollbar-track {
-    background: #3a3a3a;
-    border-radius: 4px;
+    background: ${props => props.theme.backgroundColor};
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: #6b6b6b;
-    border-radius: 4px;
-    &:hover {
-      background-color: #7b7b7b;
-    }
+    background-color: ${props => props.theme.textColor};
+    border: 3px solid ${props => props.theme.backgroundColor};
+    border-radius: 5px;
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: ${props => props.theme.backgroundColor};
+  }
+
+  &::-webkit-scrollbar-button {
+    width: 0;
+    height: 0;
+  }
+
+  &::-webkit-scrollbar-button:vertical:start:decrement,
+  &::-webkit-scrollbar-button:vertical:end:increment,
+  &::-webkit-scrollbar-button:horizontal:start:decrement,
+  &::-webkit-scrollbar-button:horizontal:end:increment {
+    display: none;
+  }
+
+  /* Chrome-specific styles */
+  &::-webkit-scrollbar-button:vertical:start {
+    height: 0;
+    display: none;
+  }
+
+  &::-webkit-scrollbar-button:vertical:end {
+    height: 0;
+    display: none;
+  }
+
+  &::-webkit-scrollbar-button:horizontal:start {
+    width: 0;
+    display: none;
+  }
+
+  &::-webkit-scrollbar-button:horizontal:end {
+    width: 0;
+    display: none;
   }
 `;
