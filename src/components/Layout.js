@@ -32,45 +32,17 @@ const ChatWrapper = styled.div`
 `;
 
 const Layout = () => {
-  const {
-    theme,
-    setIsDarkMode,
-    isCollapsed,
-    selectedConversationId,
-    messages,
-    setMessages,
-    setIsCollapsed,
-    projectPath,
-    setProjectPath,
-    api,
-  } = useAppContext();
-
-  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
-  const toggleTheme = () => setIsDarkMode(prev => !prev);
+  const { theme } = useAppContext();
 
   return (
-    <AppContainer>
-      <Sidebar theme={theme} isCollapsed={isCollapsed} />
+    <AppContainer theme={theme}>
+      <Sidebar />
       <MainContent>
         <HeaderWrapper>
-          <Header 
-            theme={theme}
-            toggleSidebar={toggleSidebar}
-            toggleTheme={toggleTheme}
-            projectPath={projectPath}
-            setProjectPath={setProjectPath}
-            isCollapsed={isCollapsed}
-            selectedConversationId={selectedConversationId}
-          />
+          <Header />
         </HeaderWrapper>
         <ChatWrapper>
-          <ChatComponent 
-            theme={theme}
-            conversationId={selectedConversationId}          
-            messages={messages}
-            setMessages={setMessages}
-            refreshProject={api.refreshProject}
-          />
+          <ChatComponent />
         </ChatWrapper>
       </MainContent>
     </AppContainer>

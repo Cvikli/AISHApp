@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { ScrollableDiv, Button } from './components/SharedStyles';
 import { MAX_TEXTAREA_HEIGHT } from './constants';
-import { useAPI } from './api';
 import { useAppContext } from './contexts/AppContext';
 import Message from './components/Message';
 import SystemPrompt from './components/SystemPrompt';
@@ -22,25 +21,14 @@ const MessageHistory = styled(ScrollableDiv)`
   flex: 1;
   overflow-y: auto;
   padding: 0px;
-
-  /* Additional Chrome-specific styles */
-  &::-webkit-scrollbar-button {
-    display: none !important;
-  }
-
-  &::-webkit-scrollbar-button:vertical:start,
-  &::-webkit-scrollbar-button:vertical:end,
-  &::-webkit-scrollbar-button:horizontal:start,
-  &::-webkit-scrollbar-button:horizontal:end {
-    display: none !important;
-  }
 `;
 
 const InputContainer = styled.div`
   display: flex;
   padding: 0px;
   background-color: ${props => props.theme.backgroundColor};
-  border-top: 1px solid ${props => props.theme.borderColor};
+  border-left: 10px solid ${props => props.theme.textColor};
+  border-top: 1px solid ${props => props.theme.textColor};
 `;
 
 const InputWrapper = styled.div`
@@ -48,12 +36,11 @@ const InputWrapper = styled.div`
   flex-grow: 1;
   align-items: center;
   background-color: ${props => props.theme.backgroundColor};
-  border: 1px solid ${props => props.theme.borderColor};
 `;
 
 const Prompt = styled.span`
   color: ${props => props.theme.textColor};
-  padding: 5px;
+  padding: 2px;
   font-size: 14px;
 `;
 
@@ -89,20 +76,31 @@ const SendButton = styled(Button)`
   }
 `;
 
-function ChatComponent({ theme, conversationId, messages, setMessages, refreshProject }) {
+function ChatComponent() {
+  const {
+    theme,
+    conversations,
+    selectedConversationId,
+    addMessage,
+    processMessage,
+  } = useAppContext();
+
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
   const messageEndRef = useRef(null);
   const textAreaRef = useRef(null);
-  const api = useAPI();
-  const { addMessage } = useAppContext();
+
+  const messages = conversations[selectedConversationId]?.messages || [];
+
+  // Filter out system messages from the displayed history
+  const displayedMessages = messages.filter(message => message.role !== 'system');
 
   useEffect(() => {
     if (messageEndRef.current && !isSystemPromptOpen) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, isSystemPromptOpen]);
+  }, [displayedMessages, isSystemPromptOpen]);
 
   useEffect(() => {
     if (textAreaRef.current) {
@@ -120,13 +118,9 @@ function ChatComponent({ theme, conversationId, messages, setMessages, refreshPr
       addMessage(userMessage);
   
       try {
-        const data = await api.processMessage({ message: inputValue, conversation_id: conversationId });
-        const aiMessage = { role: 'ai', message: data.response, timestamp: new Date().toISOString() };
-        addMessage(aiMessage);
+        await processMessage(inputValue);
       } catch (error) {
         console.error('Error:', error);
-        const errorMessage = { role: 'ai', message: 'Sorry, I encountered an error.', timestamp: new Date().toISOString() };
-        addMessage(errorMessage);
       } finally {
         setIsTyping(false);
       }
@@ -140,35 +134,14 @@ function ChatComponent({ theme, conversationId, messages, setMessages, refreshPr
     }
   };
 
-  const handleSystemPromptUpdate = (updatedMessage) => {
-    setMessages(prevMessages => {
-      const systemPromptIndex = prevMessages.findIndex(msg => msg.role === 'system');
-      if (systemPromptIndex !== -1) {
-        const updatedMessages = [...prevMessages];
-        updatedMessages[systemPromptIndex] = { ...updatedMessages[systemPromptIndex], message: updatedMessage };
-        return updatedMessages;
-      }
-      return prevMessages;
-    });
-  };
-
-  const systemPrompt = messages.find(msg => msg.role === 'system');
-  const otherMessages = messages.filter(msg => msg.role !== 'system');
-
   return (
     <ChatContainer theme={theme}>
       <MessageHistory theme={theme}>
-        {systemPrompt && (
-          <SystemPrompt
-            message={systemPrompt.message}
-            theme={theme}
-            onUpdate={handleSystemPromptUpdate}
-            isOpen={isSystemPromptOpen}
-            setIsOpen={setIsSystemPromptOpen}
-            refreshProject={refreshProject}
-          />
-        )}
-        {otherMessages.map((message, index) => (
+        <SystemPrompt
+          isOpen={isSystemPromptOpen}
+          setIsOpen={setIsSystemPromptOpen}
+        />
+        {displayedMessages.map((message, index) => (
           <Message
             key={index}
             message={message.message}

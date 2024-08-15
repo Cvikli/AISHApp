@@ -20,7 +20,7 @@ const SidebarContainer = styled.div`
 const NewConversationButton = styled.button`
   width: 100%;
   height: ${HEADER_HEIGHT}px;
-  min-height: ${HEADER_HEIGHT}px; // Ensure minimum height
+  min-height: ${HEADER_HEIGHT}px;
   font-size: 14px;
   display: flex;
   align-items: center;
@@ -72,7 +72,7 @@ const ConversationItem = styled.div`
   cursor: pointer;
   color: ${props => props.theme.text};  
   transition: background-color 0.05s ease;
-border-left: 3px solid transparent;
+  border-left: 3px solid transparent;
   &:hover {
     background-color: ${props => props.theme.hoverColor};
   }
@@ -98,8 +98,15 @@ const EmptyConversation = styled.div`
   opacity: 0.7;
 `;
 
-function Sidebar({ isCollapsed, theme }) {
-  const { conversations, selectConversation, selectedConversationId, api } = useAppContext();
+function Sidebar() {
+  const { 
+    theme, 
+    isCollapsed, 
+    conversations, 
+    selectedConversationId, 
+    selectConversation, 
+    startNewConversation 
+  } = useAppContext();
 
   const handleConversationClick = (id) => {
     selectConversation(id);
@@ -117,7 +124,7 @@ function Sidebar({ isCollapsed, theme }) {
   return (
     <SidebarContainer isCollapsed={isCollapsed} theme={theme}>
       <NewConversationButton 
-        onClick={api.startNewConversation} 
+        onClick={startNewConversation} 
         theme={theme}
         isCollapsed={isCollapsed}
       >

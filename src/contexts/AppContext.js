@@ -10,7 +10,6 @@ export const AppProvider = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [projectPath, setProjectPath] = useState("");
-  const [messages, setMessages] = useState([]);
   const [systemPrompt, setSystemPrompt] = useState("");
 
   const theme = isDarkMode ? darkTheme : lightTheme;
@@ -26,13 +25,6 @@ export const AppProvider = ({ children }) => {
       setSelectedConversationId(data.conversation_id);
       setConversations(data.available_conversations);
       setSystemPrompt(data.system_prompt);
-      if (data.history && data.history.length > 0) {
-        setMessages(data.history);
-      } else {
-        // If no history, add the system prompt from the API
-        const apiSystemPrompt = { role: 'system', message: data.system_prompt, timestamp: new Date().toISOString() };
-        setMessages([apiSystemPrompt]);
-      }
       initializeAppCalled.current = true;
     } catch (error) {
       console.error('Failed to initialize AI state:', error);
@@ -48,7 +40,15 @@ export const AppProvider = ({ children }) => {
       const response = await api.selectConversation({ conversation_id: id });
       if (response && response.status === 'success') {
         setSelectedConversationId(id);
-        setMessages(response.history || []);
+        setConversations(prev => ({
+          ...prev,
+          [id]: {
+            ...prev[id],
+            messages: response.history || [],
+            system_prompt: response.system_prompt
+          }
+        }));
+        setSystemPrompt(response.system_prompt);
       }
     } catch (error) {
       console.error('Error selecting conversation:', error);
@@ -56,90 +56,153 @@ export const AppProvider = ({ children }) => {
   }, [api]);
 
   const startNewConversation = useCallback(async () => {
-    console.log("startNewConversation function called");
     try {
-      console.log("Starting new conversation");
       const response = await api.startNewConversation();
-      console.log("New conversation response:", response);
       if (response && response.status === 'success') {
-        const apiSystemPrompt = { role: 'system', message: systemPrompt, timestamp: new Date().toISOString() };
+        const newConversationId = response.conversation_id;
         const newConversation = {
-          id: response.conversation_id,
+          id: newConversationId,
           timestamp: new Date().toISOString(),
           sentence: "New Conversation",
-          messages: [apiSystemPrompt]
+          messages: [{ role: 'system', message: systemPrompt, timestamp: new Date().toISOString() }],
+          system_prompt: systemPrompt
         };
-        console.log("New conversation object:", newConversation);
-        setConversations(prevConversations => ({
-          ...prevConversations,
-          [response.conversation_id]: newConversation
+        setConversations(prev => ({
+          ...prev,
+          [newConversationId]: newConversation
         }));
-        setMessages([apiSystemPrompt]);
-        await selectConversation(response.conversation_id);
+        setSelectedConversationId(newConversationId);
+        setSystemPrompt(systemPrompt);
       }
     } catch (error) {
       console.error('Error starting new conversation:', error);
     }
-  }, [api, selectConversation, systemPrompt]);
+  }, [api, systemPrompt]);
 
   const addMessage = useCallback((newMessage) => {
-    setMessages(prevMessages => [...prevMessages, newMessage]);
-    setConversations(prevConversations => {
-      const updatedConversation = {
-        ...prevConversations[selectedConversationId],
-        messages: [...(prevConversations[selectedConversationId]?.messages || []), newMessage],
-        sentence: newMessage.role === 'user' ? newMessage.message.substring(0, 30) + '...' : prevConversations[selectedConversationId]?.sentence
-      };
+    setConversations(prev => {
+      const conversation = prev[selectedConversationId];
       return {
-        ...prevConversations,
-        [selectedConversationId]: updatedConversation
+        ...prev,
+        [selectedConversationId]: {
+          ...conversation,
+          messages: [...conversation.messages, newMessage],
+          sentence: newMessage.role === 'user' ? newMessage.message.substring(0, 30) + '...' : conversation.sentence
+        }
       };
     });
   }, [selectedConversationId]);
 
-  const updateProjectPath = useCallback(async (newPath) => {
+ const updateProjectPath = useCallback((newPath) => {
+    setProjectPath(newPath);
+    
+    // Add a system message to indicate the project path change attempt
+    addMessage({
+      role: 'system',
+      message: `Attempting to update project path to: ${newPath}`,
+      timestamp: new Date().toISOString()
+    });
+
+    // Make the API call without waiting for the response
+    api.setPath({ path: newPath })
+      .then(response => {
+        if (response && response.status === 'success') {
+          if (response.system_prompt) {
+            setSystemPrompt(response.system_prompt);
+            setConversations(prev => ({
+              ...prev,
+              [selectedConversationId]: {
+                ...prev[selectedConversationId],
+                system_prompt: response.system_prompt
+              }
+            }));
+          }
+          // Add a success message
+          addMessage({
+            role: 'system',
+            message: `Project path successfully updated to: ${newPath}`,
+            timestamp: new Date().toISOString()
+          });
+        } else {
+          // Add an error message if the status is not success
+          addMessage({
+            role: 'system',
+            message: `Failed to update project path. Server response: ${response.message || 'Unknown error'}`,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error updating project path:', error);
+        // Add an error message
+        addMessage({
+          role: 'system',
+          message: `Error updating project path: ${error.message || 'Unknown error'}`,
+          timestamp: new Date().toISOString()
+        });
+      });
+  }, [api, selectedConversationId, addMessage]);
+  const updateSystemPrompt = useCallback(async (newPrompt) => {
     try {
-      await api.setPath({ path: newPath });
-      setProjectPath(newPath);
+      await api.updateSystemPrompt({ system_prompt: newPrompt });
+      setSystemPrompt(newPrompt);
     } catch (error) {
-      console.error('Error updating project path:', error);
+      console.error('Error updating system prompt:', error);
     }
   }, [api]);
 
+  const refreshProject = useCallback(async () => {
+    try {
+      await api.refreshProject();
+    } catch (error) {
+      console.error('Error refreshing project:', error);
+    }
+  }, [api]);
+
+  const processMessage = useCallback(async (message) => {
+    try {
+      const data = await api.processMessage({ message, conversation_id: selectedConversationId });
+      const aiMessage = { role: 'ai', message: data.response, timestamp: new Date().toISOString() };
+      addMessage(aiMessage);
+    } catch (error) {
+      console.error('Error processing message:', error);
+      const errorMessage = { role: 'ai', message: 'Sorry, I encountered an error.', timestamp: new Date().toISOString() };
+      addMessage(errorMessage);
+    }
+  }, [api, selectedConversationId, addMessage]);
+
   const value = useMemo(() => ({
     conversations,
-    setConversations,
     selectedConversationId,
-    setSelectedConversationId,
     isCollapsed,
     setIsCollapsed,
     isDarkMode,
     setIsDarkMode,
     projectPath,
-    setProjectPath: updateProjectPath,
-    messages,
-    setMessages,
+    systemPrompt,
     theme,
-    api,
     selectConversation,
     startNewConversation,
     addMessage,
-    systemPrompt,
-    setSystemPrompt,
+    updateProjectPath,
+    updateSystemPrompt,
+    refreshProject,
+    processMessage,
   }), [
     conversations,
     selectedConversationId,
     isCollapsed,
     isDarkMode,
     projectPath,
-    messages,
+    systemPrompt,
     theme,
-    api,
     selectConversation,
     startNewConversation,
     addMessage,
     updateProjectPath,
-    systemPrompt,
+    updateSystemPrompt,
+    refreshProject,
+    processMessage,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 
 const MessageContainer = styled.div`
   margin: 8px 0;
-  padding: 5px 10px;
+  padding: 5px 2px;
   font-family: 'Courier New', monospace;
   font-size: 14px;
   background-color: ${props => props.theme.backgroundColor};

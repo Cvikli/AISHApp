@@ -1,14 +1,18 @@
 import styled from 'styled-components';
 
 export const Button = styled.button`
-  padding: 10px 16px;
+  padding: 5px 10px;
   margin: 0px;
-  background-color: ${props => props.theme.buttonBackground};
-  color: ${props => props.theme.buttonText};
-  border: none;
+  background-color: transparent;
+  color: ${props => props.theme.textColor};
+  border: 1px solid ${props => props.theme.borderColor};
   border-radius: 0px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
+
+  &:hover {
+    background-color: ${props => props.theme.hoverColor};
+  }
 `;
 
 export const ScrollableDiv = styled.div`

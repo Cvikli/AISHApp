@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Button } from './SharedStyles';
 import FolderStructureModal from './FolderStructureModal';
+import { useAppContext } from '../contexts/AppContext';
 
-export const HEADER_HEIGHT = 36; // Changed to a number
+export const HEADER_HEIGHT = 36;
 
 const HeaderContainer = styled.div`
   display: flex;
   align-items: center;
-  height: ${HEADER_HEIGHT}px; // Apply the unit here
+  height: ${HEADER_HEIGHT}px;
   border-bottom: 1px solid ${props => props.theme.borderColor};
   background-color: ${props => props.theme.backgroundColor};
 `;
@@ -80,17 +81,23 @@ const FolderButton = styled(Button)`
   margin-right: 10px;
 `;
 
-function Header({ 
-  theme,
-  toggleSidebar, 
-  toggleTheme, 
-  projectPath,
-  setProjectPath,
-  isCollapsed,
-  selectedConversationId
-}) {
+function Header() {
+  const {
+    theme,
+    isDarkMode,
+    setIsDarkMode,
+    isCollapsed,
+    setIsCollapsed,
+    projectPath,
+    updateProjectPath,
+    selectedConversationId
+  } = useAppContext();
+
   const [inputPath, setInputPath] = useState(projectPath);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+  const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
   const handlePathChange = (e) => {
     setInputPath(e.target.value);
@@ -105,7 +112,7 @@ function Header({
   };
 
   const handleSetProjectPath = async (newPath) => {
-    await setProjectPath(newPath);
+    await updateProjectPath(newPath);
     setInputPath(newPath);
   };
 
@@ -131,7 +138,7 @@ function Header({
           <FolderButton onClick={openModal}>📁</FolderButton>
         </PathInputContainer>
         <ThemeToggle onClick={toggleTheme} theme={theme}>
-          {theme.name === 'dark' ? '☀️' : '🌙'}
+          {isDarkMode ? '☀️' : '🌙'}
         </ThemeToggle>
       </ButtonGroup>
       <FolderStructureModal
