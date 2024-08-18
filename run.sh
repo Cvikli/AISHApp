@@ -12,7 +12,7 @@ byobu new-session -d -s julia-react-app -n 'Julia-React' \; split-window -h
 
 # Select the left pane (pane 0) and run the Julia server
 byobu select-pane -t 0
-byobu send-keys "cd ../AISHServer && julia server_unstoppable.jl'" C-m
+byobu send-keys "cd ../AISHServer && julia server_unstoppable.jl" C-m
 
 # Select the right pane (pane 1) and run the React frontend
 byobu select-pane -t 1
