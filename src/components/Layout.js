@@ -1,9 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
+import { Outlet } from 'react-router-dom';
 import { useAppContext } from '../contexts/AppContext';
 import Sidebar from './Sidebar';
 import Header from './Header';
-import ChatComponent from '../Chat';
 
 const AppContainer = styled.div`
   display: flex;
@@ -42,7 +42,7 @@ const Layout = () => {
           <Header />
         </HeaderWrapper>
         <ChatWrapper>
-          <ChatComponent />
+          <Outlet />
         </ChatWrapper>
       </MainContent>
     </AppContainer>

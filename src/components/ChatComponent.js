@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
+import { useParams } from 'react-router-dom';
 import { ScrollableDiv, Button } from './components/SharedStyles';
 import { MAX_TEXTAREA_HEIGHT } from './constants';
 import { useAppContext } from './contexts/AppContext';
@@ -81,9 +82,12 @@ function ChatComponent() {
   const {
     theme,
     conversations,
-    selectedConversationId,
     addMessage,
+    selectConversation,
+    processMessage
   } = useAppContext();
+
+  const { conversationId } = useParams();
 
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -92,7 +96,13 @@ function ChatComponent() {
   const messageEndRef = useRef(null);
   const textAreaRef = useRef(null);
 
-  const messages = conversations[selectedConversationId]?.messages || [];
+  useEffect(() => {
+    if (conversationId && !conversations[conversationId]) {
+      selectConversation(conversationId);
+    }
+  }, [conversationId, conversations, selectConversation]);
+
+  const messages = conversations[conversationId]?.messages || [];
 
   // Filter out system messages from the displayed history
   const displayedMessages = messages.filter(message => message.role !== 'system');
@@ -117,14 +127,14 @@ function ChatComponent() {
       setInputValue('');
       setStreamedContent('');
   
-      addMessage(userMessage);
+      addMessage(conversationId, userMessage);
   
       try {
         await streamProcessMessage(
           inputValue,
           (content) => setStreamedContent(prev => prev + content),
           (finalContent) => {
-            addMessage({ role: 'assistant', message: finalContent, timestamp: new Date().toISOString() });
+            addMessage(conversationId, { role: 'assistant', message: finalContent, timestamp: new Date().toISOString() });
             setStreamedContent('');
             setIsTyping(false);
           }

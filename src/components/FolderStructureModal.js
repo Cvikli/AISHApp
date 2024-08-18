@@ -92,13 +92,19 @@ const FolderStructureModal = ({ isOpen, onClose, theme, projectPath, setProjectP
 
   useEffect(() => {
     if (isOpen) {
-      fetchFolderStructure();
+      fetchFolderStructure(projectPath);
     }
   }, [isOpen, projectPath]);
 
-  const fetchFolderStructure = async () => {
+  const fetchFolderStructure = async (path) => {
     try {
-      const response = await fetch('http://localhost:8001/api/list_items');
+      const response = await fetch('http://localhost:8001/api/list_items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ path }),
+      });
       const data = await response.json();
       if (data.status === 'success') {
         setCurrentPath(data.current_path);
@@ -118,8 +124,7 @@ const FolderStructureModal = ({ isOpen, onClose, theme, projectPath, setProjectP
       const newPath = item.isParent
         ? currentPath.split('/').slice(0, -1).join('/')
         : `${currentPath}/${item.name}`;
-      setProjectPath(newPath);
-      await fetchFolderStructure();
+      fetchFolderStructure(newPath);
     }
   };
 

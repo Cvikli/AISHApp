@@ -1,12 +1,21 @@
 import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AppProvider } from './contexts/AppContext';
-import AppContent from './components/AppContent';
+import Layout from './components/Layout';
+import ChatPage from './components/ChatPage';
 
 function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <Router>
+      <AppProvider>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Navigate to="/conversation/default" replace />} />
+            <Route path="conversation/:conversationId" element={<ChatPage />} />
+          </Route>
+        </Routes>
+      </AppProvider>
+    </Router>
   );
 }
 

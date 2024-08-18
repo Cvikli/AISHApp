@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link, useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppContext } from '../contexts/AppContext';
 import { ScrollableDiv } from './SharedStyles';
@@ -103,14 +104,10 @@ function Sidebar() {
     theme, 
     isCollapsed, 
     conversations, 
-    selectedConversationId, 
-    selectConversation, 
     startNewConversation 
   } = useAppContext();
 
-  const handleConversationClick = (id) => {
-    selectConversation(id);
-  };
+  const { conversationId } = useParams();
 
   const formatTitle = (title) => {
     return title.replace(/_/g, ' ');
@@ -136,16 +133,20 @@ function Sidebar() {
             <EmptyConversation theme={theme}>No conversations yet</EmptyConversation>
           ) : (
             sortedConversations.map((conversation) => (
-              <ConversationItem 
+              <Link 
+                to={`/conversation/${conversation.id}`} 
                 key={conversation.id} 
-                onClick={() => handleConversationClick(conversation.id)}
-                isSelected={conversation.id === selectedConversationId}
-                theme={theme}
+                style={{ textDecoration: 'none' }}
               >
-                <ConversationTitle title={formatTitle(conversation.sentence)}>
-                  {formatTitle(conversation.sentence)}
-                </ConversationTitle>
-              </ConversationItem>
+                <ConversationItem 
+                  isSelected={conversation.id === conversationId}
+                  theme={theme}
+                >
+                  <ConversationTitle title={formatTitle(conversation.sentence)}>
+                    {formatTitle(conversation.sentence)}
+                  </ConversationTitle>
+                </ConversationItem>
+              </Link>
             ))
           )}
         </ConversationList>
