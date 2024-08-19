@@ -12,43 +12,62 @@ export const streamProcessMessage = async (message, onMessage, onDone) => {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let accumulatedContent = '';
+
+  const processChunk = (chunk) => {
+    const lines = chunk.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line === '') continue;
+
+      if (line.startsWith('event:')) {
+        buffer += line + '\n';
+      } else if (line.startsWith('data:')) {
+        buffer += line + '\n\n';
+        const event = buffer.match(/^event:\s*(.+)$/m)?.[1];
+        const data = buffer.match(/^data:\s*(.+)$/m)?.[1];
+
+        if (event && data) {
+          try {
+            const parsedData = JSON.parse(data);
+            switch (event) {
+              case 'message':
+                accumulatedContent += parsedData.content;
+                onMessage(parsedData.content);
+                break;
+              case 'done':
+                // Use the final content from the 'done' event
+                accumulatedContent = parsedData.content;
+                onDone(accumulatedContent);
+                break;
+            }
+          } catch (error) {
+            console.warn('Error parsing JSON:', error);
+            // If JSON parsing fails, we'll treat the data as plain text
+            if (event === 'message') {
+              accumulatedContent += data;
+              onMessage(data);
+            } else if (event === 'done') {
+              onDone(accumulatedContent);
+            }
+          }
+        }
+        buffer = '';
+      } else {
+        buffer += line + '\n';
+      }
+    }
+  };
 
   while (true) {
     const { value, done } = await reader.read();
     if (done) break;
-
-    buffer += decoder.decode(value, { stream: true });
-    
-    let boundaryIndex;
-    while ((boundaryIndex = buffer.indexOf('\n\n')) !== -1) {
-      const chunk = buffer.slice(0, boundaryIndex);
-      buffer = buffer.slice(boundaryIndex + 2);
-
-      if (chunk.trim() === '') continue;
-
-      const [eventField, dataField] = chunk.split('\n');
-      const [, event] = eventField.split(': ');
-      const [, data] = dataField.split(': ');
-
-      try {
-        const parsedData = JSON.parse(data);
-        switch (event) {
-          case 'message':
-            onMessage(parsedData.content);
-            break;
-          case 'done':
-            onDone(parsedData.content);
-            break;
-        }
-      } catch (error) {
-        console.error('Error parsing JSON:', error);
-        // If JSON parsing fails, we'll just continue to the next chunk
-      }
-    }
+    const chunk = decoder.decode(value, { stream: true });
+    processChunk(chunk);
   }
 
-  // Handle any remaining data in the buffer
+  // Process any remaining data in the buffer
   if (buffer.trim() !== '') {
-    console.warn('Unprocessed data in buffer:', buffer);
+    processChunk(buffer);
   }
 };
