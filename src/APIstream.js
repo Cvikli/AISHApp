@@ -48,7 +48,7 @@ export const streamProcessMessage = async (message, onMessage, onDone) => {
               accumulatedContent += data;
               onMessage(data);
             } else if (event === 'done') {
-              onDone(accumulatedContent);
+              onDone(data);
             }
           }
         }

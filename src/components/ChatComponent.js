@@ -84,7 +84,6 @@ function ChatComponent() {
     conversations,
     addMessage,
     selectConversation,
-    processMessage
   } = useAppContext();
 
   const { conversationId } = useParams();
@@ -104,7 +103,6 @@ function ChatComponent() {
 
   const messages = conversations[conversationId]?.messages || [];
 
-  // Filter out system messages from the displayed history
   const displayedMessages = messages.filter(message => message.role !== 'system');
 
   useEffect(() => {
