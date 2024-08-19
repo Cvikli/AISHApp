@@ -62,23 +62,29 @@ const ThemeToggle = styled.button`
   color: ${props => props.theme.textColor};
 `;
 
-const PathInputContainer = styled.div`
+const ProjectPathContainer = styled.div`
   display: flex;
   align-items: center;
+  margin-right: 10px;
+  padding: 5px;
+  background-color: ${props => props.theme.inputBackground};
+  border: 1px solid ${props => props.theme.borderColor};
+  border-radius: 4px;
 `;
 
-const PathInput = styled.input`
-  width: 200px;
-  padding: 5px;
-  margin-right: 10px;
-  border: 1px solid ${props => props.theme.borderColor};
-  background-color: ${props => props.theme.inputBackground};
+const ProjectPathText = styled.span`
   color: ${props => props.theme.textColor};
+  font-size: 14px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const FolderButton = styled(Button)`
-  padding: 5px 10px;
-  margin-right: 10px;
+  padding: 2px 5px;
+  font-size: 16px;
+  margin-right: 5px;
 `;
 
 function Header() {
@@ -93,15 +99,10 @@ function Header() {
     selectedConversationId
   } = useAppContext();
 
-  const [inputPath, setInputPath] = useState(projectPath);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
-
-  const handlePathChange = (e) => {
-    setInputPath(e.target.value);
-  };
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -113,7 +114,7 @@ function Header() {
 
   const handleSetProjectPath = async (newPath) => {
     await updateProjectPath(newPath);
-    setInputPath(newPath);
+    closeModal();
   };
 
   return (
@@ -128,15 +129,12 @@ function Header() {
         </ConversationId>
       </Title>
       <ButtonGroup>
-        <PathInputContainer>
-          <PathInput 
-            value={inputPath}
-            onChange={handlePathChange}
-            placeholder="Enter project path"
-            theme={theme}
-          />
-          <FolderButton onClick={openModal}>📁</FolderButton>
-        </PathInputContainer>
+        <ProjectPathContainer theme={theme}>
+          <FolderButton onClick={openModal} theme={theme}>📁</FolderButton>
+          <ProjectPathText theme={theme} title={projectPath}>
+            {projectPath || 'No project selected'}
+          </ProjectPathText>
+        </ProjectPathContainer>
         <ThemeToggle onClick={toggleTheme} theme={theme}>
           {isDarkMode ? '☀️' : '🌙'}
         </ThemeToggle>

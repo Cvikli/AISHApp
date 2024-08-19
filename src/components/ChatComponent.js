@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { useParams } from 'react-router-dom';
-import { ScrollableDiv, Button } from './components/SharedStyles';
-import { MAX_TEXTAREA_HEIGHT } from './constants';
-import { useAppContext } from './contexts/AppContext';
-import Message from './components/Message';
-import SystemPrompt from './components/SystemPrompt';
-import { streamProcessMessage } from './APIstream';
+import { ScrollableDiv, Button } from './SharedStyles';
+import { MAX_TEXTAREA_HEIGHT } from '../constants';
+import { useAppContext } from '../contexts/AppContext';
+import Message from './Message';
+import SystemPrompt from './SystemPrompt';
+import { streamProcessMessage } from '../APIstream';
 
 const ChatContainer = styled.div`
   display: flex;
