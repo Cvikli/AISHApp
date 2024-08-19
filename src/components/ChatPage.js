@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import ChatComponent from '../Chat';
+import ChatComponent from './ChatComponent';
 import { useAppContext } from '../contexts/AppContext';
 
 function ChatPage() {
