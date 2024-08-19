@@ -36,13 +36,13 @@ const InputContainer = styled.div`
 const InputWrapper = styled.div`
   display: flex;
   flex-grow: 1;
-  align-items: center;
+  align-items: flex-start;
   background-color: ${props => props.theme.backgroundColor};
 `;
 
 const Prompt = styled.span`
   color: ${props => props.theme.textColor};
-  padding: 2px;
+  padding: 5px 2px;
   font-size: 14px;
 `;
 

@@ -63,19 +63,20 @@ export const AppProvider = ({ children }) => {
     try {
       const response = await api.startNewConversation();
       if (response && response.status === 'success') {
-        const newConversationId = response.conversation_id;
-        const newConversation = {
-          id: newConversationId,
-          timestamp: new Date().toISOString(),
-          sentence: "New Conversation",
-          messages: [{ role: 'system', message: systemPrompt, timestamp: new Date().toISOString() }],
-          system_prompt: systemPrompt
-        };
+        const newConversation = response.conversation;
+        if (!newConversation || typeof newConversation.id !== 'string') {
+          console.error('Invalid conversation data:', newConversation);
+          return;
+        }
         setConversations(prev => ({
           ...prev,
-          [newConversationId]: newConversation
+          [newConversation.id]: {
+            ...newConversation,
+            messages: [{ role: 'system', message: systemPrompt, timestamp: new Date().toISOString() }],
+            system_prompt: systemPrompt
+          }
         }));
-        navigate(`/conversation/${newConversationId}`);
+        navigate(`/conversation/${newConversation.id}`);
       }
     } catch (error) {
       console.error('Error starting new conversation:', error);
