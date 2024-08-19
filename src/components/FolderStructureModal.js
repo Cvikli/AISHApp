@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Button } from './SharedStyles';
+import { useAPI } from '../API';
 
 const ModalBackground = styled.div`
   position: fixed;
@@ -89,6 +90,7 @@ const CurrentPath = styled.div`
 const FolderStructureModal = ({ isOpen, onClose, theme, projectPath, setProjectPath }) => {
   const [currentPath, setCurrentPath] = useState('');
   const [items, setItems] = useState([]);
+  const api = useAPI();
 
   useEffect(() => {
     if (isOpen) {
@@ -98,14 +100,7 @@ const FolderStructureModal = ({ isOpen, onClose, theme, projectPath, setProjectP
 
   const fetchFolderStructure = async (path) => {
     try {
-      const response = await fetch('http://localhost:8001/api/list_items', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ path }),
-      });
-      const data = await response.json();
+      const data = await api.listItems({ path });
       if (data.status === 'success') {
         setCurrentPath(data.current_path);
         setItems([
