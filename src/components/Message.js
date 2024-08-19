@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
 
@@ -22,6 +22,12 @@ const Timestamp = styled.div`
   color: white;
   opacity: 0.7;
   margin-top: 4px;
+`;
+
+const MetaInfo = styled.span`
+  margin-left: 10px;
+  font-size: 12px;
+  color: ${props => props.theme.textColor};
 `;
 
 const StyledMarkdown = styled(ReactMarkdown)`
@@ -71,14 +77,30 @@ const StyledMarkdown = styled(ReactMarkdown)`
   }
 `;
 
-function Message({ message, isUser, timestamp, theme }) {
-  const formatTimestamp = (ts) => {
-    if (!ts) return ''; // Return an empty string if timestamp is undefined
-    const parts = ts.split('_');
-    return parts.length > 1 ? parts[1] : ts; // Return the original timestamp if it doesn't contain an underscore
-  };
+const formatTimestamp = (ts) => {
+  if (!ts) return '';
+  const date = new Date(ts);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+};
+const formatMetaInfo = (msg) => {
+  if (!msg) return '';
+  const { input_token, output_token, price, elapsed } = msg;
+  // if (!input_token && !output_token && !price) return '';
+  return `[${input_token || 0} in, ${output_token || 0} out, $${(price || 0).toFixed(6)}, ${(elapsed || 0).toFixed(2)}s]`;
+};
 
+function Message({ message, theme }) {
+  useEffect(() => {
+  }, [message]);
+
+  if (!message) {
+    console.warn("Received empty message");
+    return null;
+  }
+  const isUser = message.role === 'user'
+  const timestamp = message.timestamp
   const formattedTimestamp = formatTimestamp(timestamp);
+  const formattedMeta = formatMetaInfo(message);
 
   return (
     <MessageContainer isUser={isUser} theme={theme}>
@@ -86,14 +108,24 @@ function Message({ message, isUser, timestamp, theme }) {
         <>
           <div>
             <UserPrompt theme={theme}>$ </UserPrompt>
-            {message}
+            {message.content}
           </div>
-          {formattedTimestamp && <Timestamp theme={theme}>{formattedTimestamp}</Timestamp>}
+          {formattedTimestamp && (
+            <Timestamp theme={theme}>
+              {formattedTimestamp}
+              {formattedMeta && <MetaInfo theme={theme}>{formattedMeta}</MetaInfo>}
+            </Timestamp>
+          )}
         </>
       ) : (
         <>
-          <StyledMarkdown theme={theme}>{message}</StyledMarkdown>
-          {formattedTimestamp && <Timestamp theme={theme}>{formattedTimestamp}</Timestamp>}
+          <StyledMarkdown theme={theme}>{message.content}</StyledMarkdown>
+          {formattedTimestamp && (
+            <Timestamp theme={theme}>
+              {formattedTimestamp}
+              {formattedMeta && <MetaInfo theme={theme}>{formattedMeta}</MetaInfo>}
+            </Timestamp>
+          )}
         </>
       )}
     </MessageContainer>

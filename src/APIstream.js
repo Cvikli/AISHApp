@@ -12,7 +12,8 @@ export const streamProcessMessage = async (message, onMessage, onDone) => {
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
-  let accumulatedContent = '';
+  let in_meta = null;
+  let out_meta = null;
 
   const processChunk = (chunk) => {
     const lines = chunk.split('\n');
@@ -32,20 +33,21 @@ export const streamProcessMessage = async (message, onMessage, onDone) => {
             const parsedData = JSON.parse(data);
             switch (event) {
               case 'message':
-                accumulatedContent += parsedData.content;
                 onMessage(parsedData.content);
                 break;
+              case 'in_meta':
+                in_meta = parsedData;
+                break;
+                case 'out_meta':
+                  out_meta = parsedData;
+                break;
               case 'done':
-                // Use the final content from the 'done' event
-                accumulatedContent = parsedData.content;
-                onDone(accumulatedContent);
+                onDone(parsedData.content, in_meta, out_meta);
                 break;
             }
           } catch (error) {
             console.warn('Error parsing JSON:', error);
-            // If JSON parsing fails, we'll treat the data as plain text
             if (event === 'message') {
-              accumulatedContent += data;
               onMessage(data);
             } else if (event === 'done') {
               onDone(data);
@@ -66,7 +68,6 @@ export const streamProcessMessage = async (message, onMessage, onDone) => {
     processChunk(chunk);
   }
 
-  // Process any remaining data in the buffer
   if (buffer.trim() !== '') {
     processChunk(buffer);
   }

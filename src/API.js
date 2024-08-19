@@ -48,7 +48,6 @@ export const useAPI = () => {
     setPath: createApiMethod('set_path', 'post'),
     refreshProject: createApiMethod('refresh_project', 'post'),
     updateSystemPrompt: createApiMethod('update_system_prompt', 'post'),
-    processMessage: createApiMethod('process_message', 'post'),
     listItems: createApiMethod('list_items', 'post'),
   }), [createApiMethod]);
 

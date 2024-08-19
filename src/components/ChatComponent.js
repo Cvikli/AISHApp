@@ -83,23 +83,21 @@ function ChatComponent() {
     theme,
     conversations,
     addMessage,
-    selectConversation,
+    updateMessage,
+    conversationId
   } = useAppContext();
 
-  const { conversationId } = useParams();
 
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
   const [streamedContent, setStreamedContent] = useState('');
+  const [streamedMeta, setStreamedMeta] = useState(null);
   const messageEndRef = useRef(null);
   const textAreaRef = useRef(null);
 
   useEffect(() => {
-    if (conversationId && !conversations[conversationId]) {
-      selectConversation(conversationId);
-    }
-  }, [conversationId, conversations, selectConversation]);
+  }, [conversationId]);
 
   const messages = conversations[conversationId]?.messages || [];
 
@@ -120,7 +118,8 @@ function ChatComponent() {
   
   const handleSend = async () => {
     if (inputValue.trim()) {
-      const userMessage = { role: 'user', message: inputValue, timestamp: new Date().toISOString() };
+      const timestamp = new Date().toISOString();
+      const userMessage = { role: 'user', message: inputValue, timestamp };
       setIsTyping(true);
       setInputValue('');
       setStreamedContent('');
@@ -131,9 +130,25 @@ function ChatComponent() {
         await streamProcessMessage(
           inputValue,
           (content) => setStreamedContent(prev => prev + content),
-          (finalContent) => {
-            addMessage(conversationId, { role: 'assistant', message: finalContent, timestamp: new Date().toISOString() });
+          (finalContent, streamedInMeta, streamedOutMeta) => {
+            updateMessage(conversationId, timestamp, { 
+              id: streamedInMeta.id,
+              input_tokens: streamedInMeta.input_tokens,
+              output_tokens: streamedInMeta.output_tokens,
+              price: streamedInMeta.price,
+              elapsed: streamedInMeta.elapsed,});
+            addMessage(conversationId, { 
+              role: 'assistant', 
+              message: finalContent, 
+              timestamp: new Date().toISOString(),
+              id: streamedOutMeta.id,
+              input_tokens: streamedOutMeta.input_tokens,
+              output_tokens: streamedOutMeta.output_tokens,
+              price: streamedOutMeta.price,
+              elapsed: streamedOutMeta.elapsed,
+            });
             setStreamedContent('');
+            setStreamedMeta(null);
             setIsTyping(false);
           }
         );
@@ -141,13 +156,6 @@ function ChatComponent() {
         console.error('Error:', error);
         setIsTyping(false);
       }
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
     }
   };
 
@@ -160,17 +168,13 @@ function ChatComponent() {
         />
         {displayedMessages.map((message, index) => (
           <Message
-            key={index}
-            message={message.message}
-            isUser={message.role === 'user'}
-            timestamp={message.timestamp}
+            message={message}
             theme={theme}
           />
         ))}
         {isTyping && (
           <Message
-            message={streamedContent || "AI is typing..."}
-            isUser={false}
+            message={{content: streamedContent || "AI is typing..."}}
             theme={theme}
           />
         )}
@@ -183,7 +187,7 @@ function ChatComponent() {
             ref={textAreaRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyPress}
+            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
             placeholder="Enter command..."
             rows={1}
             theme={theme}

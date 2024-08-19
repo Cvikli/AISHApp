@@ -105,10 +105,10 @@ function Sidebar() {
     isCollapsed, 
     conversations, 
     startNewConversation,
-    selectConversation
+    selectConversation,
+    conversationId
   } = useAppContext();
 
-  const { conversationId } = useParams();
   const navigate = useNavigate();
 
   const formatTitle = (title) => {

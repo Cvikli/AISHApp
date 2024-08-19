@@ -7,6 +7,7 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   const [conversations, setConversations] = useState({});
+  const [conversationId, setConversationId] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [projectPath, setProjectPath] = useState("");
@@ -42,41 +43,54 @@ export const AppProvider = ({ children }) => {
 
   const selectConversation = useCallback(async (id) => {
     try {
+      setConversationId(id)
       const response = await api.selectConversation({ conversation_id: id });
-      if (response && response.status === 'success') {
+      console.log('API Response:', response); // Log the entire response
+
+      if (response?.status === 'success') {
+        const updatedConversation = {
+          ...conversations[id],
+          messages: response.history || [],
+          system_prompt: response.system_prompt
+        };
+        
+        console.log('Updated Conversation:', updatedConversation); // Log the updated conversation
+
         setConversations(prev => ({
           ...prev,
-          [id]: {
-            ...prev[id],
-            messages: response.history || [],
-            system_prompt: response.system_prompt
-          }
+          [id]: updatedConversation
         }));
+
         setSystemPrompt(response.system_prompt);
+
+        // Log the updated state
+        console.log('Updated Conversations State:', {
+          ...conversations,
+          [id]: updatedConversation
+        });
       }
     } catch (error) {
       console.error('Error selecting conversation:', error);
     }
-  }, [api]);
+  }, [api, conversations]);
 
   const startNewConversation = useCallback(async () => {
     try {
       const response = await api.startNewConversation();
-      if (response && response.status === 'success') {
+      if (response?.status === 'success') {
         const newConversation = response.conversation;
-        if (!newConversation || typeof newConversation.id !== 'string') {
-          console.error('Invalid conversation data:', newConversation);
-          return;
+        if (newConversation?.id) {
+          setConversations(prev => ({
+            ...prev,
+            [newConversation.id]: {
+              ...newConversation,
+              messages: [{ role: 'system', message: systemPrompt, timestamp: new Date().toISOString() }],
+              system_prompt: systemPrompt
+            }
+          }));
+          setConversationId(newConversation.id)
+          navigate(`/conversation/${newConversation.id}`);
         }
-        setConversations(prev => ({
-          ...prev,
-          [newConversation.id]: {
-            ...newConversation,
-            messages: [{ role: 'system', message: systemPrompt, timestamp: new Date().toISOString() }],
-            system_prompt: systemPrompt
-          }
-        }));
-        navigate(`/conversation/${newConversation.id}`);
       }
     } catch (error) {
       console.error('Error starting new conversation:', error);
@@ -101,7 +115,7 @@ export const AppProvider = ({ children }) => {
   const updateProjectPath = useCallback(async (newPath) => {
     try {
       const response = await api.setPath({ path: newPath });
-      if (response && response.status === 'success') {
+      if (response?.status === 'success') {
         setProjectPath(newPath);
         if (response.system_prompt) {
           setSystemPrompt(response.system_prompt);
@@ -129,20 +143,27 @@ export const AppProvider = ({ children }) => {
     }
   }, [api]);
 
-  const processMessage = useCallback(async (conversationId, message) => {
-    try {
-      const data = await api.processMessage({ message, conversation_id: conversationId });
-      const aiMessage = { role: 'ai', message: data.response, timestamp: new Date().toISOString() };
-      addMessage(conversationId, aiMessage);
-    } catch (error) {
-      console.error('Error processing message:', error);
-      const errorMessage = { role: 'ai', message: 'Sorry, I encountered an error.', timestamp: new Date().toISOString() };
-      addMessage(conversationId, errorMessage);
-    }
-  }, [api, addMessage]);
+  const updateMessage = useCallback((conversationId, messageTimestamp, updates) => {
+    setConversations(prev => {
+      const conversation = prev[conversationId];
+      console.log(conversation)
+      if (!conversation) return prev;
+      return {
+        ...prev,
+        [conversationId]: {
+          ...conversation,
+          messages: conversation.messages.map(msg =>
+            msg.timestamp === messageTimestamp ? { ...msg, ...updates } : msg
+          ),
+        }
+      };
+    });
+  }, []);
 
   const value = useMemo(() => ({
     conversations,
+    conversationId,
+    setConversationId,
     isCollapsed,
     setIsCollapsed,
     isDarkMode,
@@ -153,12 +174,14 @@ export const AppProvider = ({ children }) => {
     selectConversation,
     startNewConversation,
     addMessage,
+    updateMessage,
     updateProjectPath,
     updateSystemPrompt,
     refreshProject,
-    processMessage,
   }), [
     conversations,
+    conversationId,
+    setConversationId,
     isCollapsed,
     isDarkMode,
     projectPath,
@@ -167,10 +190,10 @@ export const AppProvider = ({ children }) => {
     selectConversation,
     startNewConversation,
     addMessage,
+    updateMessage,
     updateProjectPath,
     updateSystemPrompt,
     refreshProject,
-    processMessage,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
