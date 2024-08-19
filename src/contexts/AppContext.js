@@ -27,10 +27,14 @@ export const AppProvider = ({ children }) => {
       setSystemPrompt(data.system_prompt);
       setProjectPath(data.project_path || "");
       initializeAppCalled.current = true;
+
+      if (data.conversation_id) {
+        navigate(`/conversation/${data.conversation_id}`);
+      }
     } catch (error) {
       console.error('Failed to initialize AI state:', error);
     }
-  }, [api]);
+  }, [api, navigate]);
 
   useEffect(() => {
     initializeApp();

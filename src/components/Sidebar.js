@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppContext } from '../contexts/AppContext';
 import { ScrollableDiv } from './SharedStyles';
@@ -104,13 +104,20 @@ function Sidebar() {
     theme, 
     isCollapsed, 
     conversations, 
-    startNewConversation 
+    startNewConversation,
+    selectConversation
   } = useAppContext();
 
   const { conversationId } = useParams();
+  const navigate = useNavigate();
 
   const formatTitle = (title) => {
     return title.replace(/_/g, ' ');
+  };
+
+  const handleConversationClick = (id) => {
+    selectConversation(id);
+    navigate(`/conversation/${id}`);
   };
 
   // Sort conversations by timestamp in descending order
@@ -133,20 +140,16 @@ function Sidebar() {
             <EmptyConversation theme={theme}>No conversations yet</EmptyConversation>
           ) : (
             sortedConversations.map((conversation) => (
-              <Link 
-                to={`/conversation/${conversation.id}`} 
-                key={conversation.id} 
-                style={{ textDecoration: 'none' }}
+              <ConversationItem 
+                key={conversation.id}
+                isSelected={conversation.id === conversationId}
+                theme={theme}
+                onClick={() => handleConversationClick(conversation.id)}
               >
-                <ConversationItem 
-                  isSelected={conversation.id === conversationId}
-                  theme={theme}
-                >
-                  <ConversationTitle title={formatTitle(conversation.sentence)}>
-                    {formatTitle(conversation.sentence)}
-                  </ConversationTitle>
-                </ConversationItem>
-              </Link>
+                <ConversationTitle title={formatTitle(conversation.sentence)}>
+                  {formatTitle(conversation.sentence)}
+                </ConversationTitle>
+              </ConversationItem>
             ))
           )}
         </ConversationList>
