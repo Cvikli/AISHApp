@@ -105,9 +105,11 @@ function Sidebar() {
     isCollapsed, 
     conversations, 
     startNewConversation,
-    selectConversation,
-    conversationId
+    selectConversation
   } = useAppContext();
+
+  
+  const { conversationId } = useParams();
 
   const navigate = useNavigate();
 
@@ -117,7 +119,6 @@ function Sidebar() {
 
   const handleConversationClick = (id) => {
     selectConversation(id);
-    navigate(`/conversation/${id}`);
   };
 
   // Sort conversations by timestamp in descending order

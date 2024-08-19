@@ -83,31 +83,29 @@ function ChatComponent() {
     theme,
     conversations,
     addMessage,
-    updateMessage,
-    conversationId
+    updateMessage
   } = useAppContext();
 
+  const { conversationId } = useParams();
 
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
   const [streamedContent, setStreamedContent] = useState('');
-  const [streamedMeta, setStreamedMeta] = useState(null);
   const messageEndRef = useRef(null);
   const textAreaRef = useRef(null);
 
   useEffect(() => {
   }, [conversationId]);
 
-  const messages = conversations[conversationId]?.messages || [];
-
-  const displayedMessages = messages.filter(message => message.role !== 'system');
+  const currentConversation = conversations[conversationId] || { messages: [], systemPrompt: '' };
+  const { messages, systemPrompt } = currentConversation;
 
   useEffect(() => {
     if (messageEndRef.current && !isSystemPromptOpen) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [displayedMessages, isSystemPromptOpen, streamedContent]);
+  }, [messages, isSystemPromptOpen, streamedContent]);
 
   useEffect(() => {
     if (textAreaRef.current) {
@@ -119,7 +117,7 @@ function ChatComponent() {
   const handleSend = async () => {
     if (inputValue.trim()) {
       const timestamp = new Date().toISOString();
-      const userMessage = { role: 'user', message: inputValue, timestamp };
+      const userMessage = { role: 'user', content: inputValue, timestamp };
       setIsTyping(true);
       setInputValue('');
       setStreamedContent('');
@@ -139,7 +137,7 @@ function ChatComponent() {
               elapsed: streamedInMeta.elapsed,});
             addMessage(conversationId, { 
               role: 'assistant', 
-              message: finalContent, 
+              content: finalContent, 
               timestamp: new Date().toISOString(),
               id: streamedOutMeta.id,
               input_tokens: streamedOutMeta.input_tokens,
@@ -148,7 +146,6 @@ function ChatComponent() {
               elapsed: streamedOutMeta.elapsed,
             });
             setStreamedContent('');
-            setStreamedMeta(null);
             setIsTyping(false);
           }
         );
@@ -165,8 +162,10 @@ function ChatComponent() {
         <SystemPrompt
           isOpen={isSystemPromptOpen}
           setIsOpen={setIsSystemPromptOpen}
+          systemPrompt={systemPrompt}
+          conversationId={conversationId}
         />
-        {displayedMessages.map((message, index) => (
+        {messages.map((message, index) => (
           <Message
             message={message}
             theme={theme}

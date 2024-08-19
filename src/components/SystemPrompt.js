@@ -67,8 +67,9 @@ const RefreshButton = styled(Button)`
   font-size: 18px;
 `;
 
-function SystemPrompt({ isOpen, setIsOpen }) {
-  const { theme, systemPrompt, updateSystemPrompt, refreshProject } = useAppContext();
+function SystemPrompt({ isOpen, setIsOpen, conversationId }) {
+  const { theme, conversations, updateSystemPrompt, refreshProject } = useAppContext();
+  const systemPrompt = conversations[conversationId]?.systemPrompt || '';
   const [editableMessage, setEditableMessage] = useState(systemPrompt);
   const [isEdited, setIsEdited] = useState(false);
   const textareaRef = useRef(null);
@@ -99,7 +100,7 @@ function SystemPrompt({ isOpen, setIsOpen }) {
 
   const handleUpdateSystemPrompt = async () => {
     try {
-      await updateSystemPrompt(editableMessage);
+      await updateSystemPrompt(conversationId, editableMessage);
       setIsEdited(false);
     } catch (error) {
       console.error('Error updating system prompt:', error);

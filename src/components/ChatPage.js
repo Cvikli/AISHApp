@@ -7,7 +7,7 @@ function ChatPage() {
   const { conversationId } = useParams();
   const { conversations } = useAppContext();
 
-  if (!conversations[conversationId]) {
+  if (conversationId && !conversations[conversationId]) {
     return <div>No conversation selected. Most likely the backend server isn't on as it would initialize an empty conversation!</div>;
   }
 

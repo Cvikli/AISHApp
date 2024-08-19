@@ -10,8 +10,8 @@ function App() {
       <AppProvider>
         <Routes>
           <Route path="/" element={<Layout />}>
-            <Route index element={<Navigate to="/conversation/default" replace />} />
-            <Route path="conversation/:conversationId" element={<ChatPage />} />
+            <Route index element={<Navigate to="/chat/new" replace />} />
+            <Route path="chat/:conversationId" element={<ChatPage />} />
           </Route>
         </Routes>
       </AppProvider>

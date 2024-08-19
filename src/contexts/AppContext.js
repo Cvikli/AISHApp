@@ -7,17 +7,15 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   const [conversations, setConversations] = useState({});
-  const [conversationId, setConversationId] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [projectPath, setProjectPath] = useState("");
-  const [systemPrompt, setSystemPrompt] = useState("");
 
   const theme = isDarkMode ? darkTheme : lightTheme;
+  const initializeAppCalled = useRef(false);
   const navigate = useNavigate();
 
   const api = useAPI();
-  const initializeAppCalled = useRef(false);
 
   const initializeApp = useCallback(async () => {
     if (initializeAppCalled.current) return;
@@ -25,12 +23,19 @@ export const AppProvider = ({ children }) => {
     try {
       const data = await api.initializeAIState();
       setConversations(data.available_conversations);
-      setSystemPrompt(data.system_prompt);
       setProjectPath(data.project_path || "");
+      setConversations(prev => ({
+        ...prev,
+        [data.conversation_id]: {
+          ...prev[data.conversation_id],
+          messages: [],
+          systemPrompt: data.system_prompt
+        }
+      }));
       initializeAppCalled.current = true;
 
       if (data.conversation_id) {
-        navigate(`/conversation/${data.conversation_id}`);
+        navigate(`/chat/${data.conversation_id}`);
       }
     } catch (error) {
       console.error('Failed to initialize AI state:', error);
@@ -43,9 +48,8 @@ export const AppProvider = ({ children }) => {
 
   const selectConversation = useCallback(async (id) => {
     try {
-      setConversationId(id)
       const response = await api.selectConversation({ conversation_id: id });
-      console.log('API Response:', response); // Log the entire response
+      console.log('API Response:', response);
 
       if (response?.status === 'success') {
         const updatedConversation = {
@@ -54,16 +58,15 @@ export const AppProvider = ({ children }) => {
           system_prompt: response.system_prompt
         };
         
-        console.log('Updated Conversation:', updatedConversation); // Log the updated conversation
+        console.log('Updated Conversation:', updatedConversation);
 
         setConversations(prev => ({
           ...prev,
           [id]: updatedConversation
         }));
 
-        setSystemPrompt(response.system_prompt);
+        navigate(`/chat/${id}`);
 
-        // Log the updated state
         console.log('Updated Conversations State:', {
           ...conversations,
           [id]: updatedConversation
@@ -84,18 +87,17 @@ export const AppProvider = ({ children }) => {
             ...prev,
             [newConversation.id]: {
               ...newConversation,
-              messages: [{ role: 'system', message: systemPrompt, timestamp: new Date().toISOString() }],
-              system_prompt: systemPrompt
+              messages: [],
+              systemPrompt: response.system_prompt || ''
             }
           }));
-          setConversationId(newConversation.id)
-          navigate(`/conversation/${newConversation.id}`);
+          navigate(`/chat/${newConversation.id}`);
         }
       }
     } catch (error) {
       console.error('Error starting new conversation:', error);
     }
-  }, [api, systemPrompt, navigate]);
+  }, [api, navigate]);
 
   const addMessage = useCallback((conversationId, newMessage) => {
     setConversations(prev => {
@@ -106,7 +108,7 @@ export const AppProvider = ({ children }) => {
         [conversationId]: {
           ...conversation,
           messages: [...conversation.messages, newMessage],
-          sentence: newMessage.role === 'user' ? newMessage.message.substring(0, 30) + '...' : conversation.sentence
+          sentence: newMessage.role === 'user' ? newMessage.content.substring(0, 30) + '...' : conversation.sentence
         }
       };
     });
@@ -118,7 +120,13 @@ export const AppProvider = ({ children }) => {
       if (response?.status === 'success') {
         setProjectPath(newPath);
         if (response.system_prompt) {
-          setSystemPrompt(response.system_prompt);
+          setConversations(prev => ({
+            ...prev,
+            [Object.keys(prev)[0]]: {
+              ...prev[Object.keys(prev)[0]],
+              systemPrompt: response.system_prompt
+            }
+          }));
         }
       }
     } catch (error) {
@@ -126,10 +134,16 @@ export const AppProvider = ({ children }) => {
     }
   }, [api]);
 
-  const updateSystemPrompt = useCallback(async (newPrompt) => {
+  const updateSystemPrompt = useCallback(async (conversationId, newPrompt) => {
     try {
       await api.updateSystemPrompt({ system_prompt: newPrompt });
-      setSystemPrompt(newPrompt);
+      setConversations(prev => ({
+        ...prev,
+        [conversationId]: {
+          ...prev[conversationId],
+          systemPrompt: newPrompt
+        }
+      }));
     } catch (error) {
       console.error('Error updating system prompt:', error);
     }
@@ -146,7 +160,6 @@ export const AppProvider = ({ children }) => {
   const updateMessage = useCallback((conversationId, messageTimestamp, updates) => {
     setConversations(prev => {
       const conversation = prev[conversationId];
-      console.log(conversation)
       if (!conversation) return prev;
       return {
         ...prev,
@@ -161,16 +174,12 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const value = useMemo(() => ({
-    conversations,
-    conversationId,
-    setConversationId,
+    theme,
+    isDarkMode,
     isCollapsed,
     setIsCollapsed,
-    isDarkMode,
-    setIsDarkMode,
     projectPath,
-    systemPrompt,
-    theme,
+    conversations,
     selectConversation,
     startNewConversation,
     addMessage,
@@ -179,14 +188,12 @@ export const AppProvider = ({ children }) => {
     updateSystemPrompt,
     refreshProject,
   }), [
-    conversations,
-    conversationId,
-    setConversationId,
-    isCollapsed,
-    isDarkMode,
-    projectPath,
-    systemPrompt,
     theme,
+    isDarkMode,
+    isCollapsed,
+    setIsCollapsed,
+    projectPath,
+    conversations,
     selectConversation,
     startNewConversation,
     addMessage,
