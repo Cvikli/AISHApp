@@ -66,7 +66,6 @@ const ProjectPathContainer = styled.div`
   display: flex;
   align-items: center;
   margin-right: 10px;
-  padding: 5px;
   background-color: ${props => props.theme.inputBackground};
   border: 1px solid ${props => props.theme.borderColor};
   border-radius: 4px;
@@ -79,12 +78,14 @@ const ProjectPathText = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding: 0 5px;
 `;
 
 const FolderButton = styled(Button)`
   padding: 2px 5px;
   font-size: 16px;
-  margin-right: 5px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
 `;
 
 function Header() {

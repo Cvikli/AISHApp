@@ -10,7 +10,7 @@ const apiCall = async (endpoint, method = 'get', data = null) => {
     const response = await axios[method](`${BASE_URL}/${endpoint}`, data);
     console.log(`API response for ${endpoint}:`, response.data);
     if (response.data.status !== 'success') {
-      throw new Error(response.data.message || `Failed to ${endpoint.replace('_', ' ')}`);
+      throw new Error(response.data.message || `Failed to ${endpoint}`);
     }
     return response.data;
   } catch (error) {

@@ -3,15 +3,20 @@ import styled from 'styled-components';
 export const Button = styled.button`
   padding: 5px 10px;
   margin: 0px;
-  background-color: transparent;
-  color: ${props => props.theme.textColor};
-  border: 1px solid ${props => props.theme.borderColor};
+  background-color: #1270ff; // Changed to a lighter blue (Dodger Blue)
+  color: white;
+  border: none;
   border-radius: 0px;
   cursor: pointer;
   font-size: 14px;
+  transition: background-color 0.2s;
 
   &:hover {
-    background-color: ${props => props.theme.hoverColor};
+    background-color: #187bcd; // Slightly darker for hover state
+  }
+
+  &:active {
+    background-color: #1464a8; // Even darker for active state
   }
 `;
 

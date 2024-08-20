@@ -86,7 +86,14 @@ const formatTimestamp = (ts) => {
 const formatMetaInfo = (msg) => {
   if (!msg) return '';
   const { input_tokens, output_tokens, price, elapsed } = msg;
-  return `[${input_tokens || 0} in, ${output_tokens || 0} out, $${(price || 0).toFixed(6)}, ${(elapsed || 0).toFixed(2)}s]`;
+  const parts = [];
+  
+  if (input_tokens > 0) parts.push(`${input_tokens} in`);
+  if (output_tokens > 0) parts.push(`${output_tokens} out`);
+  if (price > 0) parts.push(`$${price.toFixed(6)}`);
+  if (elapsed > 0) parts.push(`${elapsed.toFixed(2)}s`);
+  
+  return parts.length > 0 ? `[${parts.join(', ')}]` : '';
 };
 
 function Message({ message, theme }) {

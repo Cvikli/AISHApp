@@ -67,15 +67,8 @@ const TextArea = styled.textarea`
 `;
 
 const SendButton = styled(Button)`
-  background-color: transparent;
-  color: ${props => props.theme.textColor};
-  border: 1px solid ${props => props.theme.borderColor};
   font-size: 14px;
   padding: 5px 10px;
-
-  &:hover {
-    background-color: ${props => props.theme.hoverColor};
-  }
 `;
 
 function ChatComponent() {
@@ -93,6 +86,7 @@ function ChatComponent() {
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
   const [streamedContent, setStreamedContent] = useState('');
   const messageEndRef = useRef(null);
+  const messageHistoryRef = useRef(null);
   const textAreaRef = useRef(null);
 
   useEffect(() => {
@@ -103,7 +97,10 @@ function ChatComponent() {
 
   useEffect(() => {
     if (messageEndRef.current && !isSystemPromptOpen) {
-      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+      const isNearBottom = isUserNearBottom();
+      if (isNearBottom) {
+        scrollToBottom();
+      }
     }
   }, [messages, isSystemPromptOpen, streamedContent]);
 
@@ -114,6 +111,21 @@ function ChatComponent() {
     }
   }, [inputValue]);
   
+  const isUserNearBottom = () => {
+    if (messageHistoryRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messageHistoryRef.current;
+      const scrollThreshold = 100; // pixels from bottom
+      return scrollTop + clientHeight >= scrollHeight - scrollThreshold;
+    }
+    return false;
+  };
+
+  const scrollToBottom = () => {
+    if (messageEndRef.current) {
+      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   const handleSend = async () => {
     if (inputValue.trim()) {
       const timestamp = new Date().toISOString();
@@ -122,28 +134,31 @@ function ChatComponent() {
       setInputValue('');
       setStreamedContent('');
   
-      addMessage(conversationId, userMessage);
+      addMessage(userMessage);
   
       try {
         await streamProcessMessage(
           inputValue,
           (content) => setStreamedContent(prev => prev + content),
-          (finalContent, streamedInMeta, streamedOutMeta) => {
-            updateMessage(conversationId, timestamp, { 
-              id: streamedInMeta.id,
-              input_tokens: streamedInMeta.input_tokens,
-              output_tokens: streamedInMeta.output_tokens,
-              price: streamedInMeta.price,
-              elapsed: streamedInMeta.elapsed,});
-            addMessage(conversationId, { 
+          (inMeta) => {
+            updateMessage(timestamp, { 
+              id: inMeta.id,
+              input_tokens: inMeta.input_tokens,
+              output_tokens: inMeta.output_tokens,
+              price: inMeta.price,
+              elapsed: inMeta.elapsed,
+            });
+          },
+          (finalContent, outMeta) => {
+            addMessage({ 
               role: 'assistant', 
               content: finalContent, 
               timestamp: new Date().toISOString(),
-              id: streamedOutMeta.id,
-              input_tokens: streamedOutMeta.input_tokens,
-              output_tokens: streamedOutMeta.output_tokens,
-              price: streamedOutMeta.price,
-              elapsed: streamedOutMeta.elapsed,
+              id: outMeta.id,
+              input_tokens: outMeta.input_tokens,
+              output_tokens: outMeta.output_tokens,
+              price: outMeta.price,
+              elapsed: outMeta.elapsed,
             });
             setStreamedContent('');
             setIsTyping(false);
@@ -158,12 +173,11 @@ function ChatComponent() {
 
   return (
     <ChatContainer theme={theme}>
-      <MessageHistory theme={theme}>
+      <MessageHistory ref={messageHistoryRef} theme={theme}>
         <SystemPrompt
           isOpen={isSystemPromptOpen}
           setIsOpen={setIsSystemPromptOpen}
           systemPrompt={systemPrompt}
-          conversationId={conversationId}
         />
         {messages.map((message, index) => (
           <Message
@@ -192,7 +206,7 @@ function ChatComponent() {
             theme={theme}
           />
         </InputWrapper>
-        <SendButton onClick={handleSend} theme={theme}>Send</SendButton>
+        <SendButton onClick={handleSend}>Send</SendButton>
       </InputContainer>
     </ChatContainer>
   );

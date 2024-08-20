@@ -111,9 +111,10 @@ function Sidebar() {
   
   const { conversationId } = useParams();
 
-  const navigate = useNavigate();
-
   const formatTitle = (title) => {
+    if (!title) {
+      return "New"
+    }
     return title.replace(/_/g, ' ');
   };
 

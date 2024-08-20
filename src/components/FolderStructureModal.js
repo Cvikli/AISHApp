@@ -44,11 +44,11 @@ const ModalTitle = styled.h2`
 const ModalBody = styled.div`
   flex-grow: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 8px;
 `;
 
 const ModalFooter = styled.div`
-  padding: 16px;
+  padding: 8px;
   border-top: 1px solid ${props => props.theme.borderColor};
   display: flex;
   justify-content: flex-end;
@@ -62,7 +62,7 @@ const ItemList = styled.ul`
 `;
 
 const ItemListItem = styled.li`
-  padding: 8px;
+  padding: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -75,7 +75,7 @@ const ItemListItem = styled.li`
 
 const ItemIcon = styled.span`
   margin-right: 8px;
-  font-size: 1.2em;
+  font-size: 1.0em;
 `;
 
 const CurrentPath = styled.div`
@@ -83,7 +83,7 @@ const CurrentPath = styled.div`
   padding: 8px;
   background-color: ${props => props.theme.inputBackground};
   border: 1px solid ${props => props.theme.borderColor};
-  border-radius: 4px;
+  border-radius: 0px;
   color: ${props => props.theme.text};
 `;
 

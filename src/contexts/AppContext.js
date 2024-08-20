@@ -66,22 +66,30 @@ export const AppProvider = ({ children }) => {
   }, [api, navigate, updateConversation]);
 
   const startNewConversation = useCallback(async () => {
-    try {
-      const response = await api.startNewConversation();
-      if (response?.status === 'success' && response.conversation?.id) {
-        updateConversation(response.conversation.id, {
-          ...response.conversation,
-          messages: [],
-          systemPrompt: response.system_prompt || ''
-        });
-        navigate(`/chat/${response.conversation.id}`);
-      }
-    } catch (error) {
-      console.error('Error starting new conversation:', error);
-    }
-  }, [api, navigate]);
+    const emptyConversation = Object.values(conversations).find(
+      conv => conv.sentence === "New" || conv.sentence === ""
+    );
 
-  const addMessage = useCallback((conversationId, newMessage) => {
+    if (emptyConversation) {
+      selectConversation(emptyConversation.id);
+    } else {
+      try {
+        const response = await api.startNewConversation();
+        if (response?.status === 'success' && response.conversation?.id) {
+          updateConversation(response.conversation.id, {
+            ...response.conversation,
+            messages: [],
+            systemPrompt: response.system_prompt || ''
+          });
+          navigate(`/chat/${response.conversation.id}`);
+        }
+      } catch (error) {
+        console.error('Error starting new conversation:', error);
+      }
+    }
+  }, [api, navigate, conversations, selectConversation, updateConversation]);
+
+  const addMessage = useCallback((newMessage) => {
     setConversations(prev => {
       const conversation = prev[conversationId];
       if (!conversation) return prev;
@@ -94,7 +102,7 @@ export const AppProvider = ({ children }) => {
         }
       };
     });
-  }, []);
+  }, [conversationId]);
 
   const updateProjectPath = useCallback(async (newPath) => {
     try {
@@ -108,16 +116,16 @@ export const AppProvider = ({ children }) => {
     } catch (error) {
       console.error('Error updating project path:', error);
     }
-  }, [api]);
+  }, [api, conversationId]);
 
-  const updateSystemPrompt = useCallback(async (conversationId, newPrompt) => {
+  const updateSystemPrompt = useCallback(async (newPrompt) => {
     try {
       await api.updateSystemPrompt({ system_prompt: newPrompt });
       updateConversation(conversationId, { systemPrompt: newPrompt });
     } catch (error) {
       console.error('Error updating system prompt:', error);
     }
-  }, [api, updateConversation]);
+  }, [api, updateConversation, conversationId]);
 
   const refreshProject = useCallback(async () => {
     try {
@@ -127,7 +135,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [api]);
 
-  const updateMessage = useCallback((conversationId, messageTimestamp, updates) => {
+  const updateMessage = useCallback((messageTimestamp, updates) => {
     setConversations(prev => {
       const conversation = prev[conversationId];
       if (!conversation) return prev;
@@ -141,7 +149,7 @@ export const AppProvider = ({ children }) => {
         }
       };
     });
-  }, []);
+  }, [conversationId]);
 
   const value = useMemo(() => ({
     theme,
