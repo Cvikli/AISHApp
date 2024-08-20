@@ -42,7 +42,7 @@ export const AppProvider = ({ children }) => {
     } catch (error) {
       console.error('Failed to initialize AI state:', error);
     }
-  }, [api, navigate]);
+  }, [api, navigate, updateConversation]);
 
   useEffect(() => {
     initializeApp();
@@ -87,7 +87,7 @@ export const AppProvider = ({ children }) => {
         console.error('Error starting new conversation:', error);
       }
     }
-  }, [api, navigate, conversations, selectConversation, updateConversation]);
+  }, [api, navigate, conversations, updateConversation]);
 
   const addMessage = useCallback((newMessage) => {
     setConversations(prev => {
@@ -116,7 +116,7 @@ export const AppProvider = ({ children }) => {
     } catch (error) {
       console.error('Error updating project path:', error);
     }
-  }, [api, conversationId]);
+  }, [api, updateConversation, conversationId]);
 
   const updateSystemPrompt = useCallback(async (newPrompt) => {
     try {

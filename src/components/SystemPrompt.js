@@ -63,9 +63,7 @@ const SystemPromptContent = styled.textarea`
   }
 `;
 
-const RefreshButton = styled(Button)`
-  font-size: 18px;
-`;
+const RefreshButton = styled(Button)``;
 
 function SystemPrompt({ isOpen, setIsOpen, conversationId }) {
   const { theme, conversations, updateSystemPrompt, refreshProject } = useAppContext();
