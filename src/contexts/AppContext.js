@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAPI } from '../API';
 import { lightTheme, darkTheme } from '../theme';
 
@@ -10,12 +10,19 @@ export const AppProvider = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [projectPath, setProjectPath] = useState("");
+  const { conversationId } = useParams();
 
   const theme = isDarkMode ? darkTheme : lightTheme;
   const initializeAppCalled = useRef(false);
   const navigate = useNavigate();
-
   const api = useAPI();
+
+  const updateConversation = useCallback((id, updates) => {
+    setConversations(prev => ({
+      ...prev,
+      [id]: { ...prev[id], ...updates }
+    }));
+  }, []);
 
   const initializeApp = useCallback(async () => {
     if (initializeAppCalled.current) return;
@@ -24,16 +31,11 @@ export const AppProvider = ({ children }) => {
       const data = await api.initializeAIState();
       setConversations(data.available_conversations);
       setProjectPath(data.project_path || "");
-      setConversations(prev => ({
-        ...prev,
-        [data.conversation_id]: {
-          ...prev[data.conversation_id],
-          messages: [],
-          systemPrompt: data.system_prompt
-        }
-      }));
+      updateConversation(data.conversation_id, {
+        messages: [],
+        systemPrompt: data.system_prompt
+      });
       initializeAppCalled.current = true;
-
       if (data.conversation_id) {
         navigate(`/chat/${data.conversation_id}`);
       }
@@ -52,47 +54,27 @@ export const AppProvider = ({ children }) => {
       console.log('API Response:', response);
 
       if (response?.status === 'success') {
-        const updatedConversation = {
-          ...conversations[id],
+        updateConversation(id, {
           messages: response.history || [],
-          system_prompt: response.system_prompt
-        };
-        
-        console.log('Updated Conversation:', updatedConversation);
-
-        setConversations(prev => ({
-          ...prev,
-          [id]: updatedConversation
-        }));
-
-        navigate(`/chat/${id}`);
-
-        console.log('Updated Conversations State:', {
-          ...conversations,
-          [id]: updatedConversation
+          systemPrompt: response.system_prompt
         });
+        navigate(`/chat/${id}`);
       }
     } catch (error) {
       console.error('Error selecting conversation:', error);
     }
-  }, [api, conversations]);
+  }, [api, navigate, updateConversation]);
 
   const startNewConversation = useCallback(async () => {
     try {
       const response = await api.startNewConversation();
-      if (response?.status === 'success') {
-        const newConversation = response.conversation;
-        if (newConversation?.id) {
-          setConversations(prev => ({
-            ...prev,
-            [newConversation.id]: {
-              ...newConversation,
-              messages: [],
-              systemPrompt: response.system_prompt || ''
-            }
-          }));
-          navigate(`/chat/${newConversation.id}`);
-        }
+      if (response?.status === 'success' && response.conversation?.id) {
+        updateConversation(response.conversation.id, {
+          ...response.conversation,
+          messages: [],
+          systemPrompt: response.system_prompt || ''
+        });
+        navigate(`/chat/${response.conversation.id}`);
       }
     } catch (error) {
       console.error('Error starting new conversation:', error);
@@ -120,13 +102,7 @@ export const AppProvider = ({ children }) => {
       if (response?.status === 'success') {
         setProjectPath(newPath);
         if (response.system_prompt) {
-          setConversations(prev => ({
-            ...prev,
-            [Object.keys(prev)[0]]: {
-              ...prev[Object.keys(prev)[0]],
-              systemPrompt: response.system_prompt
-            }
-          }));
+          updateConversation(conversationId, { systemPrompt: response.system_prompt });
         }
       }
     } catch (error) {
@@ -137,17 +113,11 @@ export const AppProvider = ({ children }) => {
   const updateSystemPrompt = useCallback(async (conversationId, newPrompt) => {
     try {
       await api.updateSystemPrompt({ system_prompt: newPrompt });
-      setConversations(prev => ({
-        ...prev,
-        [conversationId]: {
-          ...prev[conversationId],
-          systemPrompt: newPrompt
-        }
-      }));
+      updateConversation(conversationId, { systemPrompt: newPrompt });
     } catch (error) {
       console.error('Error updating system prompt:', error);
     }
-  }, [api]);
+  }, [api, updateConversation]);
 
   const refreshProject = useCallback(async () => {
     try {
