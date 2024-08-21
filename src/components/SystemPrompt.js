@@ -37,10 +37,6 @@ const ToggleButton = styled.button`
   }
 `;
 
-const ButtonContainer = styled.div`
-  display: flex;
-  gap: 10px;
-`;
 
 const SystemPromptContent = styled.textarea`
   width: 100%;
@@ -63,7 +59,6 @@ const SystemPromptContent = styled.textarea`
   }
 `;
 
-const RefreshButton = styled(Button)``;
 
 function SystemPrompt({ isOpen, setIsOpen, conversationId }) {
   const { theme, conversations } = useAppContext();
@@ -96,8 +91,6 @@ function SystemPrompt({ isOpen, setIsOpen, conversationId }) {
     setEditableMessage(e.target.value);
     setIsEdited(e.target.value !== systemPrompt);
   };
-
-
 
   return (
     <SystemPromptContainer theme={theme}>

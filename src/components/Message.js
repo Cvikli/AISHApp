@@ -91,7 +91,7 @@ const ExecuteButton = styled(Button)`
 const formatTimestamp = (ts) => {
   if (!ts) return '';
   const date = new Date(ts);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 };
 
 const formatMetaInfo = (msg) => {

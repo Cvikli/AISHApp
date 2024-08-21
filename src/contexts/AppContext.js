@@ -26,16 +26,20 @@ export const AppProvider = ({ children }) => {
   const initializeApp = useCallback(async () => {
     if (initializeAppCalled.current) return;
     console.log('initializeApp called');
-    const data = await api.initializeAIState();
-    setConversations(data.available_conversations);
-    setProjectPath(data.project_path || "");
-    updateConversation(data.conversation_id, {
-      messages: [],
-      systemPrompt: data.system_prompt?.content
-    });
-    initializeAppCalled.current = true;
-    if (data.conversation_id) {
-      navigate(`/chat/${data.conversation_id}`);
+    try {
+      const data = await api.initializeAIState();
+      setConversations(data.available_conversations);
+      setProjectPath(data.project_path || "");
+      updateConversation(data.conversation_id, {
+        messages: [],
+        systemPrompt: data.system_prompt?.content
+      });
+      initializeAppCalled.current = true;
+      if (data.conversation_id) {
+        navigate(`/chat/${data.conversation_id}`);
+      }
+    } catch (error) {
+      console.error('Error at initialization:', error);
     }
   }, [api, navigate, updateConversation]);
 
@@ -44,19 +48,15 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const selectConversation = useCallback(async (id) => {
-    try {
-      const response = await api.selectConversation({ conversation_id: id });
-      console.log('API Response:', response);
+    const response = await api.selectConversation({ conversation_id: id });
+    console.log('API Response:', response);
 
-      if (response?.status === 'success') {
-        updateConversation(id, {
-          messages: response.history || [],
-          systemPrompt: response.system_prompt?.content
-        });
-        navigate(`/chat/${id}`);
-      }
-    } catch (error) {
-      console.error('Error selecting conversation:', error);
+    if (response?.status === 'success') {
+      updateConversation(id, {
+        messages: response.history || [],
+        systemPrompt: response.system_prompt?.content
+      });
+      navigate(`/chat/${id}`);
     }
   }, [api, navigate, updateConversation]);
 
