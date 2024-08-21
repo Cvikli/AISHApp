@@ -104,7 +104,7 @@ function Sidebar() {
     theme, 
     isCollapsed, 
     conversations, 
-    startNewConversation,
+    newConversation,
     selectConversation
   } = useAppContext();
 
@@ -130,7 +130,7 @@ function Sidebar() {
   return (
     <SidebarContainer isCollapsed={isCollapsed} theme={theme}>
       <NewConversationButton 
-        onClick={startNewConversation} 
+        onClick={newConversation} 
         theme={theme}
         isCollapsed={isCollapsed}
       >

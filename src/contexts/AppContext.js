@@ -60,7 +60,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [api, navigate, updateConversation]);
 
-  const startNewConversation = useCallback(async () => {
+  const newConversation = useCallback(async () => {
     const emptyConversation = Object.values(conversations).find(
       conv => conv.sentence === "New" || conv.sentence === ""
     );
@@ -70,7 +70,7 @@ export const AppProvider = ({ children }) => {
           return rest;
         });
     }
-    const response = await api.startNewConversation();
+    const response = await api.newConversation();
     if (response?.status === 'success' && response.conversation?.id) {
       // Add the new conversation
       updateConversation(response.conversation.id, {
@@ -110,18 +110,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [api, updateConversation]);
 
-  const updateSystemPrompt = useCallback(async (conversationId, newPrompt) => {
-      await api.updateSystemPrompt({ system_prompt: newPrompt });
-      updateConversation(conversationId, { systemPrompt: newPrompt });
-  }, [api, updateConversation]);
 
-  const refreshProject = useCallback(async () => {
-    try {
-      await api.refreshProject();
-    } catch (error) {
-      console.error('Error refreshing project:', error);
-    }
-  }, [api]);
 
   const updateMessage = useCallback((conversationId, messageTimestamp, updates) => {
     setConversations(prev => {
@@ -152,12 +141,10 @@ export const AppProvider = ({ children }) => {
     projectPath,
     conversations,
     selectConversation,
-    startNewConversation,
+    newConversation,
     addMessage,
     updateMessage,
     updateProjectPath,
-    updateSystemPrompt,
-    refreshProject,
     executeBlock,
   }), [
     theme,
@@ -167,12 +154,10 @@ export const AppProvider = ({ children }) => {
     projectPath,
     conversations,
     selectConversation,
-    startNewConversation,
+    newConversation,
     addMessage,
     updateMessage,
     updateProjectPath,
-    updateSystemPrompt,
-    refreshProject,
     executeBlock,
   ]);
 

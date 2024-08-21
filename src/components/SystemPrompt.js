@@ -66,7 +66,7 @@ const SystemPromptContent = styled.textarea`
 const RefreshButton = styled(Button)``;
 
 function SystemPrompt({ isOpen, setIsOpen, conversationId }) {
-  const { theme, conversations, updateSystemPrompt, refreshProject } = useAppContext();
+  const { theme, conversations } = useAppContext();
   const systemPrompt = conversations[conversationId]?.systemPrompt || '';
   const [editableMessage, setEditableMessage] = useState(systemPrompt);
   const [isEdited, setIsEdited] = useState(false);
@@ -97,14 +97,7 @@ function SystemPrompt({ isOpen, setIsOpen, conversationId }) {
     setIsEdited(e.target.value !== systemPrompt);
   };
 
-  const handleUpdateSystemPrompt = async () => {
-    try {
-      await updateSystemPrompt(conversationId, editableMessage);
-      setIsEdited(false);
-    } catch (error) {
-      console.error('Error updating system prompt:', error);
-    }
-  };
+
 
   return (
     <SystemPromptContainer theme={theme}>
@@ -112,10 +105,6 @@ function SystemPrompt({ isOpen, setIsOpen, conversationId }) {
         <ToggleButton onClick={handleToggle} theme={theme}>
           System Prompt {isOpen ? '▲' : '▼'}
         </ToggleButton>
-        <ButtonContainer>
-          <RefreshButton onClick={refreshProject}>🔄 Refresh</RefreshButton>
-          {isOpen && isEdited && <Button onClick={handleUpdateSystemPrompt}>Update System Prompt</Button>}
-        </ButtonContainer>
       </TopSection>
       {isOpen && (
         <SystemPromptContent

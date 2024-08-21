@@ -43,11 +43,9 @@ export const useAPI = () => {
 
   const api = useMemo(() => ({
     initializeAIState: createApiMethod('initialize', 'get'),
-    startNewConversation: createApiMethod('new_conversation', 'post'),
+    newConversation: createApiMethod('new_conversation', 'post'),
     selectConversation: createApiMethod('select_conversation', 'post'),
     setPath: createApiMethod('set_path', 'post'),
-    refreshProject: createApiMethod('refresh_project', 'post'),
-    updateSystemPrompt: createApiMethod('update_system_prompt', 'post'),
     listItems: createApiMethod('list_items', 'post'),
     executeBlock: createApiMethod('execute_block', 'post'),
   }), [createApiMethod]);
