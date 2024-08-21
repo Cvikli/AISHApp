@@ -43,9 +43,7 @@ const StyledMarkdown = styled(ReactMarkdown)`
 
   code {
     background-color: ${props => props.theme.backgroundColor};
-    border: 1px solid ${props => props.theme.borderColor};
-    border-radius: 3px;
-    padding: 2px 4px;
+    border: none;
     font-family: 'Courier New', Courier, monospace;
     font-size: 14px;
     color: ${props => props.theme.textColor};
@@ -58,10 +56,10 @@ const StyledMarkdown = styled(ReactMarkdown)`
     padding: 10px;
     overflow-x: auto;
     position: relative;
+    margin: 0;
 
     code {
-      border: none;
-      padding: 0;
+      display: block;
       color: ${props => props.theme.textColor};
     }
   }
@@ -84,7 +82,7 @@ const ExecuteButton = styled(Button)`
   position: absolute;
   top: 5px;
   right: 5px;
-  padding: 2px 5px;
+  padding: 4px 8px;
   font-size: 12px;
 `;
 
@@ -129,16 +127,16 @@ function Message({ message, theme }) {
       code: ({ node, inline, className, children, ...props }) => {
         const match = /language-(\w+)/.exec(className || '');
         const language = match ? match[1] : '';
-        const isCodeBlock = !inline && language;
+        const isCodeBlock = !inline && language === 'sh';
 
         if (isCodeBlock) {
           return (
-            <pre className={className} {...props}>
+            <>
               <ExecuteButton onClick={() => handleExecute(String(children))}>
                 EXECUTE
               </ExecuteButton>
               <code>{children}</code>
-            </pre>
+            </>
           );
         }
 
@@ -157,7 +155,7 @@ function Message({ message, theme }) {
           </div>
         </>
       ) : (
-        <StyledMarkdown theme={theme} >
+        <StyledMarkdown theme={theme} components={renderContent()}>
           {message.content}
         </StyledMarkdown>
       )}
