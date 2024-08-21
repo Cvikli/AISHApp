@@ -134,14 +134,14 @@ function ChatComponent() {
       setInputValue('');
       setStreamedContent('');
   
-      addMessage(userMessage);
+      addMessage(conversationId, userMessage);
   
       try {
         await streamProcessMessage(
           inputValue,
           (content) => setStreamedContent(prev => prev + content),
           (inMeta) => {
-            updateMessage(timestamp, { 
+            updateMessage(conversationId, timestamp, { 
               id: inMeta.id,
               input_tokens: inMeta.input_tokens,
               output_tokens: inMeta.output_tokens,
@@ -150,7 +150,8 @@ function ChatComponent() {
             });
           },
           (finalContent, outMeta) => {
-            addMessage({ 
+            console.log(outMeta)
+            addMessage(conversationId, { 
               role: 'assistant', 
               content: finalContent, 
               timestamp: new Date().toISOString(),
@@ -177,7 +178,7 @@ function ChatComponent() {
         <SystemPrompt
           isOpen={isSystemPromptOpen}
           setIsOpen={setIsSystemPromptOpen}
-          systemPrompt={systemPrompt}
+          conversationId={conversationId}
         />
         {messages.map((message, index) => (
           <Message

@@ -72,6 +72,7 @@ function SystemPrompt({ isOpen, setIsOpen, conversationId }) {
   const [isEdited, setIsEdited] = useState(false);
   const textareaRef = useRef(null);
 
+
   useEffect(() => {
     setEditableMessage(systemPrompt);
     setIsEdited(false);

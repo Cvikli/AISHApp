@@ -10,7 +10,6 @@ export const AppProvider = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [projectPath, setProjectPath] = useState("");
-  const { conversationId } = useParams();
 
   const theme = isDarkMode ? darkTheme : lightTheme;
   const initializeAppCalled = useRef(false);
@@ -27,20 +26,16 @@ export const AppProvider = ({ children }) => {
   const initializeApp = useCallback(async () => {
     if (initializeAppCalled.current) return;
     console.log('initializeApp called');
-    try {
-      const data = await api.initializeAIState();
-      setConversations(data.available_conversations);
-      setProjectPath(data.project_path || "");
-      updateConversation(data.conversation_id, {
-        messages: [],
-        systemPrompt: data.system_prompt
-      });
-      initializeAppCalled.current = true;
-      if (data.conversation_id) {
-        navigate(`/chat/${data.conversation_id}`);
-      }
-    } catch (error) {
-      console.error('Failed to initialize AI state:', error);
+    const data = await api.initializeAIState();
+    setConversations(data.available_conversations);
+    setProjectPath(data.project_path || "");
+    updateConversation(data.conversation_id, {
+      messages: [],
+      systemPrompt: data.system_prompt?.content
+    });
+    initializeAppCalled.current = true;
+    if (data.conversation_id) {
+      navigate(`/chat/${data.conversation_id}`);
     }
   }, [api, navigate, updateConversation]);
 
@@ -56,7 +51,7 @@ export const AppProvider = ({ children }) => {
       if (response?.status === 'success') {
         updateConversation(id, {
           messages: response.history || [],
-          systemPrompt: response.system_prompt
+          systemPrompt: response.system_prompt?.content
         });
         navigate(`/chat/${id}`);
       }
@@ -69,30 +64,31 @@ export const AppProvider = ({ children }) => {
     const emptyConversation = Object.values(conversations).find(
       conv => conv.sentence === "New" || conv.sentence === ""
     );
-
     if (emptyConversation) {
-      selectConversation(emptyConversation.id);
-    } else {
-      try {
-        const response = await api.startNewConversation();
-        if (response?.status === 'success' && response.conversation?.id) {
-          updateConversation(response.conversation.id, {
-            ...response.conversation,
-            messages: [],
-            systemPrompt: response.system_prompt || ''
-          });
-          navigate(`/chat/${response.conversation.id}`);
-        }
-      } catch (error) {
-        console.error('Error starting new conversation:', error);
-      }
+        setConversations(prev => {
+          const { [emptyConversation.id]: _, ...rest } = prev;
+          return rest;
+        });
     }
+    const response = await api.startNewConversation();
+    if (response?.status === 'success' && response.conversation?.id) {
+      // Add the new conversation
+      updateConversation(response.conversation.id, {
+        ...response.conversation,
+        messages: [],
+        systemPrompt: response.system_prompt?.content || ''
+      });
+      navigate(`/chat/${response.conversation.id}`);
+    }
+      
   }, [api, navigate, conversations, updateConversation]);
 
-  const addMessage = useCallback((newMessage) => {
+  const addMessage = useCallback((conversationId, newMessage) => {
     setConversations(prev => {
       const conversation = prev[conversationId];
       if (!conversation) return prev;
+      console.log("conversation")
+      console.log(conversation)
       return {
         ...prev,
         [conversationId]: {
@@ -102,30 +98,22 @@ export const AppProvider = ({ children }) => {
         }
       };
     });
-  }, [conversationId]);
+  }, []);
 
-  const updateProjectPath = useCallback(async (newPath) => {
-    try {
-      const response = await api.setPath({ path: newPath });
-      if (response?.status === 'success') {
-        setProjectPath(newPath);
-        if (response.system_prompt) {
-          updateConversation(conversationId, { systemPrompt: response.system_prompt });
-        }
+  const updateProjectPath = useCallback(async (conversationId, newPath) => {
+    const response = await api.setPath({ path: newPath });
+    if (response?.status === 'success') {
+      setProjectPath(newPath);
+      if (response.system_prompt) {
+        updateConversation(conversationId, { systemPrompt: response.system_prompt.content });
       }
-    } catch (error) {
-      console.error('Error updating project path:', error);
     }
-  }, [api, updateConversation, conversationId]);
+  }, [api, updateConversation]);
 
-  const updateSystemPrompt = useCallback(async (newPrompt) => {
-    try {
+  const updateSystemPrompt = useCallback(async (conversationId, newPrompt) => {
       await api.updateSystemPrompt({ system_prompt: newPrompt });
       updateConversation(conversationId, { systemPrompt: newPrompt });
-    } catch (error) {
-      console.error('Error updating system prompt:', error);
-    }
-  }, [api, updateConversation, conversationId]);
+  }, [api, updateConversation]);
 
   const refreshProject = useCallback(async () => {
     try {
@@ -135,7 +123,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [api]);
 
-  const updateMessage = useCallback((messageTimestamp, updates) => {
+  const updateMessage = useCallback((conversationId, messageTimestamp, updates) => {
     setConversations(prev => {
       const conversation = prev[conversationId];
       if (!conversation) return prev;
@@ -149,7 +137,12 @@ export const AppProvider = ({ children }) => {
         }
       };
     });
-  }, [conversationId]);
+  }, []);
+
+  const executeBlock = useCallback(async (code) => {
+      const response = await api.executeBlock({ code });
+      console.log('Execution result:', response.result);
+  }, [api]);
 
   const value = useMemo(() => ({
     theme,
@@ -165,6 +158,7 @@ export const AppProvider = ({ children }) => {
     updateProjectPath,
     updateSystemPrompt,
     refreshProject,
+    executeBlock,
   }), [
     theme,
     isDarkMode,
@@ -179,6 +173,7 @@ export const AppProvider = ({ children }) => {
     updateProjectPath,
     updateSystemPrompt,
     refreshProject,
+    executeBlock,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

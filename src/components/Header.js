@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Button } from './SharedStyles';
 import FolderStructureModal from './FolderStructureModal';
 import { useAppContext } from '../contexts/AppContext';
+import { useParams } from 'react-router-dom';
 
 export const HEADER_HEIGHT = 36;
 
@@ -97,8 +98,8 @@ function Header() {
     setIsCollapsed,
     projectPath,
     updateProjectPath,
-    selectedConversationId
   } = useAppContext();
+  const { conversationId } = useParams();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -114,7 +115,7 @@ function Header() {
   };
 
   const handleSetProjectPath = async (newPath) => {
-    await updateProjectPath(newPath);
+    await updateProjectPath(conversationId, newPath);
     closeModal();
   };
 
@@ -126,7 +127,7 @@ function Header() {
       <Title theme={theme}>
         ORION
         <ConversationId theme={theme}>
-          {selectedConversationId ? `${selectedConversationId}` : ''}
+          {conversationId ? `${conversationId}` : ''}
         </ConversationId>
       </Title>
       <ButtonGroup>

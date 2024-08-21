@@ -1,6 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
+import { Button } from './SharedStyles';
+import { useAppContext } from '../contexts/AppContext';
 
 const MessageContainer = styled.div`
   margin: 8px 0;
@@ -55,6 +57,7 @@ const StyledMarkdown = styled(ReactMarkdown)`
     border-radius: 3px;
     padding: 10px;
     overflow-x: auto;
+    position: relative;
 
     code {
       border: none;
@@ -77,6 +80,14 @@ const StyledMarkdown = styled(ReactMarkdown)`
   }
 `;
 
+const ExecuteButton = styled(Button)`
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  padding: 2px 5px;
+  font-size: 12px;
+`;
+
 const formatTimestamp = (ts) => {
   if (!ts) return '';
   const date = new Date(ts);
@@ -97,6 +108,8 @@ const formatMetaInfo = (msg) => {
 };
 
 function Message({ message, theme }) {
+  const { executeBlock } = useAppContext();
+
   if (!message || !message.content) {
     console.warn("Received empty or invalid message");
     return null;
@@ -105,6 +118,34 @@ function Message({ message, theme }) {
   const isUser = message.role === 'user';
   const formattedTimestamp = formatTimestamp(message.timestamp);
   const formattedMeta = formatMetaInfo(message);
+
+  const handleExecute = (code) => {
+    console.log('Executing code:', code);
+    executeBlock(code);
+  };
+
+  const renderContent = () => {
+    return {
+      code: ({ node, inline, className, children, ...props }) => {
+        const match = /language-(\w+)/.exec(className || '');
+        const language = match ? match[1] : '';
+        const isCodeBlock = !inline && language;
+
+        if (isCodeBlock) {
+          return (
+            <pre className={className} {...props}>
+              <ExecuteButton onClick={() => handleExecute(String(children))}>
+                EXECUTE
+              </ExecuteButton>
+              <code>{children}</code>
+            </pre>
+          );
+        }
+
+        return <code className={className} {...props}>{children}</code>;
+      }
+    };
+  };
 
   return (
     <MessageContainer isUser={isUser} theme={theme}>
@@ -116,7 +157,9 @@ function Message({ message, theme }) {
           </div>
         </>
       ) : (
-        <StyledMarkdown theme={theme}>{message.content}</StyledMarkdown>
+        <StyledMarkdown theme={theme} >
+          {message.content}
+        </StyledMarkdown>
       )}
       {formattedTimestamp && (
         <Timestamp theme={theme}>

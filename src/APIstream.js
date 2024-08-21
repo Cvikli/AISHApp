@@ -1,6 +1,6 @@
 const API_BASE_URL = 'http://localhost:8002';
 
-export const streamProcessMessage = async (message, onMessage, onInMeta, onDone) => {
+export const streamProcessMessage = async (message, onMessage, user_meta, onDone) => {
   const response = await fetch(`${API_BASE_URL}/stream/process_message`, {
     method: 'POST',
     headers: {
@@ -12,7 +12,7 @@ export const streamProcessMessage = async (message, onMessage, onInMeta, onDone)
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
-  let outMeta = null;
+  let ai_meta = null;
 
   const processChunk = (chunk) => {
     const lines = chunk.split('\n');
@@ -34,14 +34,14 @@ export const streamProcessMessage = async (message, onMessage, onInMeta, onDone)
               case 'message':
                 onMessage(parsedData.content);
                 break;
-              case 'in_meta':
-                onInMeta(parsedData);
+              case 'user_meta':
+                user_meta(parsedData);
                 break;
-              case 'out_meta':
-                outMeta = parsedData;
+              case 'ai_meta':
+                ai_meta = parsedData;
                 break;
               case 'done':
-                onDone(parsedData.content, outMeta);
+                onDone(parsedData.content, ai_meta);
                 break;
             }
           } catch (error) {
