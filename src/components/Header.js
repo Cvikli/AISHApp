@@ -70,16 +70,18 @@ const ProjectPathContainer = styled.div`
   background-color: ${props => props.theme.inputBackground};
   border: 1px solid ${props => props.theme.borderColor};
   border-radius: 4px;
+  flex-grow: 1;
+  max-width: 600px;
 `;
 
 const ProjectPathText = styled.span`
   color: ${props => props.theme.textColor};
   font-size: 14px;
-  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 0 5px;
+  flex-grow: 1;
 `;
 
 const FolderButton = styled(Button)`
@@ -87,6 +89,7 @@ const FolderButton = styled(Button)`
   font-size: 16px;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
+  flex-shrink: 0;
 `;
 
 function Header() {
