@@ -48,6 +48,7 @@ export const useAPI = () => {
     setPath: createApiMethod('set_path', 'post'),
     listItems: createApiMethod('list_items', 'post'),
     executeBlock: createApiMethod('execute_block', 'post'),
+    toggleAutoExecute: createApiMethod('toggle_auto_execute', 'post'),
   }), [createApiMethod]);
 
   return useMemo(() => ({

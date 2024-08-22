@@ -10,6 +10,7 @@ export const AppProvider = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [projectPath, setProjectPath] = useState("");
+  const [isAutoExecute, setIsAutoExecute] = useState(false);
 
   const theme = isDarkMode ? darkTheme : lightTheme;
   const initializeAppCalled = useRef(false);
@@ -30,6 +31,7 @@ export const AppProvider = ({ children }) => {
       const data = await api.initializeAIState();
       setConversations(data.available_conversations);
       setProjectPath(data.project_path || "");
+      setIsAutoExecute(data.is_auto_execute || false);
       updateConversation(data.conversation_id, {
         messages: [],
         systemPrompt: data.system_prompt?.content
@@ -72,7 +74,6 @@ export const AppProvider = ({ children }) => {
     }
     const response = await api.newConversation();
     if (response?.status === 'success' && response.conversation?.id) {
-      // Add the new conversation
       updateConversation(response.conversation.id, {
         ...response.conversation,
         messages: [],
@@ -110,8 +111,6 @@ export const AppProvider = ({ children }) => {
     }
   }, [api, updateConversation]);
 
-
-
   const updateMessage = useCallback((conversationId, messageTimestamp, updates) => {
     setConversations(prev => {
       const conversation = prev[conversationId];
@@ -133,6 +132,14 @@ export const AppProvider = ({ children }) => {
       console.log('Execution result:', response.result);
   }, [api]);
 
+  const toggleAutoExecute = useCallback(async () => {
+    const newAutoExecuteState = !isAutoExecute;
+    const response = await api.toggleAutoExecute({ is_auto_execute: newAutoExecuteState });
+    if (response?.status === 'success') {
+      setIsAutoExecute(newAutoExecuteState);
+    }
+  }, [isAutoExecute, api]);
+
   const value = useMemo(() => ({
     theme,
     isDarkMode,
@@ -146,6 +153,8 @@ export const AppProvider = ({ children }) => {
     updateMessage,
     updateProjectPath,
     executeBlock,
+    isAutoExecute,
+    toggleAutoExecute,
   }), [
     theme,
     isDarkMode,
@@ -159,6 +168,8 @@ export const AppProvider = ({ children }) => {
     updateMessage,
     updateProjectPath,
     executeBlock,
+    isAutoExecute,
+    toggleAutoExecute,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

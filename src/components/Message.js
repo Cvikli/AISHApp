@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
 import { Button } from './SharedStyles';
@@ -80,10 +80,15 @@ const StyledMarkdown = styled(ReactMarkdown)`
 
 const ExecuteButton = styled(Button)`
   position: absolute;
-  top: 5px;
+  bottom: 5px;
   right: 5px;
   padding: 4px 8px;
   font-size: 12px;
+`;
+
+const ExecuteCount = styled.span`
+  margin-left: 5px;
+  color: ${props => props.theme.textColor};
 `;
 
 const formatTimestamp = (ts) => {
@@ -107,6 +112,7 @@ const formatMetaInfo = (msg) => {
 
 function Message({ message, theme }) {
   const { executeBlock } = useAppContext();
+  const [executeCount, setExecuteCount] = useState(0);
 
   if (!message || !message.content) {
     console.warn("Received empty or invalid message");
@@ -120,6 +126,7 @@ function Message({ message, theme }) {
   const handleExecute = (code) => {
     console.log('Executing code:', code);
     executeBlock(code);
+    setExecuteCount(prevCount => prevCount + 1);
   };
 
   const renderContent = () => {
@@ -132,10 +139,11 @@ function Message({ message, theme }) {
         if (isCodeBlock) {
           return (
             <>
+              <code>{children}</code>
               <ExecuteButton onClick={() => handleExecute(String(children))}>
                 EXECUTE
+                <ExecuteCount>{executeCount > 0 ? `(${executeCount})` : ''}</ExecuteCount>
               </ExecuteButton>
-              <code>{children}</code>
             </>
           );
         }

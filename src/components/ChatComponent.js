@@ -23,6 +23,11 @@ const MessageHistory = styled(ScrollableDiv)`
   flex: 1;
   overflow-y: auto;
   padding: 0px;
+  scroll-behavior: smooth;
+`;
+
+const BottomPadding = styled.div`
+  height: 36px;
 `;
 
 const InputContainer = styled.div`
@@ -99,7 +104,7 @@ function ChatComponent() {
     if (messageEndRef.current && !isSystemPromptOpen) {
       const isNearBottom = isUserNearBottom();
       if (isNearBottom) {
-        scrollToBottom();
+        messageEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
       }
     }
   }, [messages, isSystemPromptOpen, streamedContent]);
@@ -120,11 +125,6 @@ function ChatComponent() {
     return false;
   };
 
-  const scrollToBottom = () => {
-    if (messageEndRef.current) {
-      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  };
 
   const handleSend = async () => {
     if (inputValue.trim()) {
@@ -139,7 +139,9 @@ function ChatComponent() {
       try {
         await streamProcessMessage(
           inputValue,
-          (content) => setStreamedContent(prev => prev + content),
+          (content) => {
+            setStreamedContent(prev => prev + content);
+          },
           (inMeta) => {
             updateMessage(conversationId, timestamp, { 
               id: inMeta.id,
@@ -192,7 +194,7 @@ function ChatComponent() {
             theme={theme}
           />
         )}
-        <div ref={messageEndRef} />
+        <BottomPadding ref={messageEndRef} />
       </MessageHistory>
       <InputContainer theme={theme}>
         <InputWrapper theme={theme}>

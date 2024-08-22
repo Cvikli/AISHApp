@@ -63,6 +63,15 @@ const ThemeToggle = styled.button`
   color: ${props => props.theme.textColor};
 `;
 
+const AutoExecuteToggle = styled.button`
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 5px 10px;
+  color: ${props => props.theme.textColor};
+`;
+
 const ProjectPathContainer = styled.div`
   display: flex;
   align-items: center;
@@ -101,6 +110,8 @@ function Header() {
     setIsCollapsed,
     projectPath,
     updateProjectPath,
+    isAutoExecute,
+    toggleAutoExecute,
   } = useAppContext();
   const { conversationId } = useParams();
 
@@ -140,6 +151,9 @@ function Header() {
             {projectPath || 'No project selected'}
           </ProjectPathText>
         </ProjectPathContainer>
+        <AutoExecuteToggle onClick={toggleAutoExecute} theme={theme}>
+          {isAutoExecute ? '🔄' : '▶️'}
+        </AutoExecuteToggle>
         <ThemeToggle onClick={toggleTheme} theme={theme}>
           {isDarkMode ? '☀️' : '🌙'}
         </ThemeToggle>
