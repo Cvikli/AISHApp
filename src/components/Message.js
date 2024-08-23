@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
 import { Button } from './SharedStyles';
@@ -112,7 +112,16 @@ const formatMetaInfo = (msg) => {
 
 function Message({ message, theme }) {
   const { executeBlock } = useAppContext();
-  const [executeCount, setExecuteCount] = useState(0);
+  const [executeCounts, setExecuteCounts] = useState({});
+
+  const handleExecute = useCallback((code, index) => {
+    console.log('Executing code:', code);
+    executeBlock(code);
+    setExecuteCounts(prevCounts => ({
+      ...prevCounts,
+      [index]: (prevCounts[index] || 0) + 1
+    }));
+  }, [executeBlock]);
 
   if (!message || !message.content) {
     console.warn("Received empty or invalid message");
@@ -123,12 +132,6 @@ function Message({ message, theme }) {
   const formattedTimestamp = formatTimestamp(message.timestamp);
   const formattedMeta = formatMetaInfo(message);
 
-  const handleExecute = (code) => {
-    console.log('Executing code:', code);
-    executeBlock(code);
-    setExecuteCount(prevCount => prevCount + 1);
-  };
-
   const renderContent = () => {
     return {
       code: ({ node, inline, className, children, ...props }) => {
@@ -137,12 +140,14 @@ function Message({ message, theme }) {
         const isCodeBlock = !inline && language === 'sh';
 
         if (isCodeBlock) {
+          const codeString = String(children);
+          const codeIndex = JSON.stringify(codeString); // Use the code itself as a unique key
           return (
             <>
               <code>{children}</code>
-              <ExecuteButton onClick={() => handleExecute(String(children))}>
+              <ExecuteButton onClick={() => handleExecute(codeString, codeIndex)}>
                 EXECUTE
-                <ExecuteCount>{executeCount > 0 ? `(${executeCount})` : ''}</ExecuteCount>
+                <ExecuteCount>{executeCounts[codeIndex] > 0 ? `(${executeCounts[codeIndex]})` : ''}</ExecuteCount>
               </ExecuteButton>
             </>
           );
