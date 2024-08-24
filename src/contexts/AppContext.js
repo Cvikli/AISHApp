@@ -128,9 +128,10 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const executeBlock = useCallback(async (code) => {
-      const response = await api.executeBlock({ code });
-      console.log('Execution result:', response.result);
-  }, [api]);
+    const response = await api.executeBlock({ code });
+    console.log('Execution result:', response.result);
+    return response.result; // Return the execution result
+}, [api]);
 
   const toggleAutoExecute = useCallback(async () => {
     const newAutoExecuteState = !isAutoExecute;

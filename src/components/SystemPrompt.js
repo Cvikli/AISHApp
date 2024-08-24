@@ -37,7 +37,6 @@ const ToggleButton = styled.button`
   }
 `;
 
-
 const SystemPromptContent = styled.textarea`
   width: 100%;
   min-height: 100px;
@@ -47,7 +46,7 @@ const SystemPromptContent = styled.textarea`
   border-radius: 0px;
   color: ${props => props.theme.name === 'dark' ? '#e0e0e0' : '#333'};
   font-family: inherit;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.4;
   padding: 8px;
   margin-top: 5px;

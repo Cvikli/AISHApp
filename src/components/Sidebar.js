@@ -22,7 +22,7 @@ const NewConversationButton = styled.button`
   width: 100%;
   height: ${HEADER_HEIGHT}px;
   min-height: ${HEADER_HEIGHT}px;
-  font-size: 14px;
+  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: ${props => props.isCollapsed ? 'center' : 'flex-start'};
@@ -89,7 +89,7 @@ const ConversationTitle = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 14px;
+  font-size: 16px;
 `;
 
 const EmptyConversation = styled.div`

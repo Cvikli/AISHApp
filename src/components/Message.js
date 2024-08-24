@@ -8,7 +8,7 @@ const MessageContainer = styled.div`
   margin: 8px 0;
   padding: 5px 2px;
   font-family: 'Courier New', monospace;
-  font-size: 14px;
+  font-size: 16px;
   background-color: ${props => props.theme.backgroundColor};
   color: white;
   border-left: ${props => props.isUser ? `10px solid ${props.theme.textColor}` : 'none'};
@@ -20,7 +20,7 @@ const UserPrompt = styled.span`
 `;
 
 const Timestamp = styled.div`
-  font-size: 12px;
+  font-size: 14px;
   color: white;
   opacity: 0.7;
   margin-top: 4px;
@@ -28,7 +28,7 @@ const Timestamp = styled.div`
 
 const MetaInfo = styled.span`
   margin-left: 10px;
-  font-size: 12px;
+  font-size: 14px;
   color: ${props => props.theme.textColor};
 `;
 
@@ -45,18 +45,17 @@ const StyledMarkdown = styled(ReactMarkdown)`
     background-color: ${props => props.theme.backgroundColor};
     border: none;
     font-family: 'Courier New', Courier, monospace;
-    font-size: 14px;
+    font-size: 16px;
     color: ${props => props.theme.textColor};
   }
 
   pre {
     background-color: ${props => props.theme.backgroundColor};
-    border: 1px solid ${props => props.theme.borderColor};
     border-radius: 3px;
-    padding: 10px;
+    padding: 0px 10px;
     overflow-x: auto;
     position: relative;
-    margin: 0;
+    margin: 10px 0;
 
     code {
       display: block;
@@ -83,12 +82,29 @@ const ExecuteButton = styled(Button)`
   bottom: 5px;
   right: 5px;
   padding: 4px 8px;
-  font-size: 12px;
+  font-size: 14px;
 `;
 
 const ExecuteCount = styled.span`
   margin-left: 5px;
   color: ${props => props.theme.textColor};
+`;
+
+const CodeBlock = styled.div`
+  position: relative;
+  margin: 0px 0px 10px 0px;
+  background-color: ${props => props.theme.backgroundColor};
+  border: 1px solid ${props => props.theme.borderColor};
+  border-radius: 3px;
+  padding: 10px;
+  overflow-x: auto;
+`;
+
+const CodeContent = styled.code`
+  display: block;
+  color: ${props => props.theme.textColor};
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 16px;
 `;
 
 const formatTimestamp = (ts) => {
@@ -113,10 +129,15 @@ const formatMetaInfo = (msg) => {
 function Message({ message, theme }) {
   const { executeBlock } = useAppContext();
   const [executeCounts, setExecuteCounts] = useState({});
+  const [executionResults, setExecutionResults] = useState({});
 
-  const handleExecute = useCallback((code, index) => {
+  const handleExecute = useCallback(async (code, index) => {
     console.log('Executing code:', code);
-    executeBlock(code);
+    const result = await executeBlock(code);
+    setExecutionResults(prevResults => ({
+      ...prevResults,
+      [index]: result
+    }));
     setExecuteCounts(prevCounts => ({
       ...prevCounts,
       [index]: (prevCounts[index] || 0) + 1
@@ -141,14 +162,23 @@ function Message({ message, theme }) {
 
         if (isCodeBlock) {
           const codeString = String(children);
-          const codeIndex = JSON.stringify(codeString); // Use the code itself as a unique key
+          const codeIndex = JSON.stringify(codeString);
+          const executionResult = executionResults[codeIndex];
+
           return (
             <>
-              <code>{children}</code>
-              <ExecuteButton onClick={() => handleExecute(codeString, codeIndex)}>
-                EXECUTE
-                <ExecuteCount>{executeCounts[codeIndex] > 0 ? `(${executeCounts[codeIndex]})` : ''}</ExecuteCount>
-              </ExecuteButton>
+              <CodeBlock theme={theme}>
+                <CodeContent theme={theme}>{children}</CodeContent>
+                <ExecuteButton onClick={() => handleExecute(codeString, codeIndex)}>
+                  EXECUTE
+                  <ExecuteCount>{executeCounts[codeIndex] > 0 ? `(${executeCounts[codeIndex]})` : ''}</ExecuteCount>
+                </ExecuteButton>
+              </CodeBlock>
+              {executionResult && (
+                <CodeBlock theme={theme}>
+                  <CodeContent theme={theme}>{executionResult}</CodeContent>
+                </CodeBlock>
+              )}
             </>
           );
         }
