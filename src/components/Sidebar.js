@@ -7,7 +7,7 @@ import { HEADER_HEIGHT } from './Header';
 
 const SidebarContainer = styled.div`
   flex-shrink: 0;
-  width: ${props => props.isCollapsed ? `${HEADER_HEIGHT}px` : '250px'};
+  width: ${props => props.$isCollapsed ? `${HEADER_HEIGHT}px` : '250px'};
   height: 100%;
   overflow: hidden;
   display: flex;
@@ -25,7 +25,7 @@ const NewConversationButton = styled.button`
   font-size: 16px;
   display: flex;
   align-items: center;
-  justify-content: ${props => props.isCollapsed ? 'center' : 'flex-start'};
+  justify-content: ${props => props.$isCollapsed ? 'center' : 'flex-start'};
   padding: 0 10px;
   border: none;
   background-color: ${props => props.theme.backgroundColor};
@@ -78,7 +78,7 @@ const ConversationItem = styled.div`
     background-color: ${props => props.theme.hoverColor};
   }
 
-  ${props => props.isSelected && `
+  ${props => props.$isSelected && `
     background-color: ${props.theme.hoverColor};
     border-left-color: ${props.theme.textColor};
     font-weight: bold;
@@ -128,11 +128,11 @@ function Sidebar() {
   );
 
   return (
-    <SidebarContainer isCollapsed={isCollapsed} theme={theme}>
+    <SidebarContainer $isCollapsed={isCollapsed} theme={theme}>
       <NewConversationButton 
         onClick={newConversation} 
         theme={theme}
-        isCollapsed={isCollapsed}
+        $isCollapsed={isCollapsed}
       >
         {isCollapsed ? '+' : '+ New Conversation'}
       </NewConversationButton>
@@ -144,7 +144,7 @@ function Sidebar() {
             sortedConversations.map((conversation) => (
               <ConversationItem 
                 key={conversation.id}
-                isSelected={conversation.id === conversationId}
+                $isSelected={conversation.id === conversationId}
                 theme={theme}
                 onClick={() => handleConversationClick(conversation.id)}
               >

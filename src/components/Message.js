@@ -11,7 +11,7 @@ const MessageContainer = styled.div`
   font-size: 16px;
   background-color: ${props => props.theme.backgroundColor};
   color: white;
-  border-left: ${props => props.isUser ? `10px solid ${props.theme.textColor}` : 'none'};
+  border-left: ${props => props.$isUser ? `10px solid ${props.theme.textColor}` : 'none'};
 `;
 
 const UserPrompt = styled.span`
@@ -189,7 +189,7 @@ function Message({ message, theme }) {
   };
 
   return (
-    <MessageContainer isUser={isUser} theme={theme}>
+    <MessageContainer $isUser={isUser} theme={theme}>
       {isUser ? (
         <>
           <div>
