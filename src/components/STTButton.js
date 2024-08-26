@@ -6,7 +6,7 @@ import { useAppContext } from '../contexts/AppContext';
 const STTButtonStyled = styled(Button)`
   font-size: 16px;
   padding: 5px 10px;
-  background-color: ${props => props.active ? '#ff4136' : props.theme.backgroundColor};
+  background-color: ${props => props.$isActive ? '#ff4136' : props.theme.backgroundColor};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,17 +14,17 @@ const STTButtonStyled = styled(Button)`
   height: 40px;
   border-radius: 0;
   transition: all 0.2s ease-in-out;
-  color: ${props => props.active ? 'white' : props.theme.textColor};
-  border: 1px solid ${props => props.active ? '#ff4136' : props.theme.textColor};
+  color: ${props => props.$isActive ? 'white' : props.theme.textColor};
+  border: 1px solid ${props => props.$isActive ? '#ff4136' : props.theme.textColor};
 
   &:hover {
-    background-color: ${props => props.active ? '#e61e10' : props.theme.hoverColor};
-    color: ${props => props.active ? 'white' : props.theme.textColor};
-    border-color: ${props => props.active ? '#e61e10' : props.theme.textColor};
+    background-color: ${props => props.$isActive ? '#e61e10' : props.theme.hoverColor};
+    color: ${props => props.$isActive ? 'white' : props.theme.textColor};
+    border-color: ${props => props.$isActive ? '#e61e10' : props.theme.textColor};
     transform: scale(1.05);
   }
 
-  ${props => props.active && `
+  ${props => props.$isActive && `
     animation: pulse 1.5s infinite;
   `}
 
@@ -144,7 +144,7 @@ const STTButton = forwardRef(({ onTranscript, onActiveChange }, ref) => {
   return (
     <STTButtonStyled 
       onClick={toggleSTT} 
-      active={isSTTActive} 
+      $isActive={isSTTActive} 
       title={isSTTActive ? "Stop listening" : "Start listening"}
       theme={theme}
     >
