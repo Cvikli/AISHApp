@@ -130,6 +130,10 @@ function ChatComponent() {
   }, [messages, isSystemPromptOpen, streamedContent]);
 
   useEffect(() => {
+    scrollToBottom();
+  }, [messages, isSystemPromptOpen, streamedContent, scrollToBottom]);
+
+  useEffect(() => {
     if (textAreaRef.current) {
       textAreaRef.current.style.height = 'auto';
       textAreaRef.current.style.height = `${Math.min(textAreaRef.current.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
@@ -154,6 +158,7 @@ function ChatComponent() {
       setIsReceivingMessage(true);
       setInputValue('');
       setStreamedContent('');
+      scrollToBottom();
   
       try {
         await streamProcessMessage(
