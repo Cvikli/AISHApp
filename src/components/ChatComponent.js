@@ -128,13 +128,13 @@ function ChatComponent() {
 
   const handleSend = async () => {
     if (inputValue.trim()) {
-      const timestamp = new Date().toISOString();
-      const userMessage = { role: 'user', content: inputValue, timestamp };
+      const userMessage = { role: 'user', content: inputValue };
+      addMessage(conversationId, userMessage);
+  
       setIsTyping(true);
       setInputValue('');
       setStreamedContent('');
   
-      addMessage(conversationId, userMessage);
   
       try {
         await streamProcessMessage(
@@ -143,12 +143,13 @@ function ChatComponent() {
             setStreamedContent(prev => prev + content);
           },
           (inMeta) => {
-            updateMessage(conversationId, timestamp, { 
+            updateMessage(conversationId, inputValue, { 
               id: inMeta.id,
               input_tokens: inMeta.input_tokens,
               output_tokens: inMeta.output_tokens,
               price: inMeta.price,
               elapsed: inMeta.elapsed,
+              timestamp: inMeta.timestamp,
             });
           },
           (finalContent, outMeta) => {
@@ -156,7 +157,7 @@ function ChatComponent() {
             addMessage(conversationId, { 
               role: 'assistant', 
               content: finalContent, 
-              timestamp: new Date().toISOString(),
+              timestamp: outMeta.timestamp,
               id: outMeta.id,
               input_tokens: outMeta.input_tokens,
               output_tokens: outMeta.output_tokens,

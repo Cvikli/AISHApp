@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
 import { Button } from './SharedStyles';
@@ -36,14 +36,11 @@ const StyledMarkdown = styled(ReactMarkdown)`
   margin: 0;
   padding: 0;
 
-  p {
-    margin: 0;
-    color: white;
-  }
-
   code {
     background-color: ${props => props.theme.backgroundColor};
-    border: none;
+    border: 1px solid white;
+    border-radius: 4px;
+    padding: 1px;
     font-family: 'Courier New', Courier, monospace;
     font-size: 16px;
     color: ${props => props.theme.textColor};
@@ -51,29 +48,16 @@ const StyledMarkdown = styled(ReactMarkdown)`
 
   pre {
     background-color: ${props => props.theme.backgroundColor};
-    border-radius: 3px;
+    border-radius: 4px;
     padding: 0px 10px;
     overflow-x: auto;
     position: relative;
-    margin: 10px 0;
+    margin: 5px 0;
 
     code {
       display: block;
-      color: ${props => props.theme.textColor};
+      padding: 10px;
     }
-  }
-
-  img {
-    max-width: 100%;
-    height: auto;
-  }
-
-  * {
-    color: white;
-  }
-
-  code, pre code {
-    color: ${props => props.theme.textColor};
   }
 `;
 
@@ -93,10 +77,6 @@ const ExecuteCount = styled.span`
 const CodeBlock = styled.div`
   position: relative;
   margin: 0px 0px 10px 0px;
-  background-color: ${props => props.theme.backgroundColor};
-  border: 1px solid ${props => props.theme.borderColor};
-  border-radius: 3px;
-  padding: 10px;
   overflow-x: auto;
 `;
 
@@ -127,24 +107,30 @@ const formatMetaInfo = (msg) => {
 };
 
 function Message({ message, theme }) {
-  const { executeBlock } = useAppContext();
-  const [executeCounts, setExecuteCounts] = useState({});
-  const [executionResults, setExecutionResults] = useState({});
+  const { executeBlock, updateMessage } = useAppContext();
+  const [ executeCounts, setExecuteCounts ] = useState({});
+  const [ localContent, setLocalContent ] = useState(message.content);
+
+  useEffect(() => {
+    setLocalContent(message.content);
+  }, [message.content]);
 
   const handleExecute = useCallback(async (code, index) => {
-    console.log('Executing code:', code);
-    const result = await executeBlock(code);
-    setExecutionResults(prevResults => ({
-      ...prevResults,
-      [index]: result
-    }));
+    console.log('Executing code:', code, message.timestamp);
+    const response = await executeBlock(code, new Date(message.timestamp).toISOString());
     setExecuteCounts(prevCounts => ({
       ...prevCounts,
       [index]: (prevCounts[index] || 0) + 1
     }));
-  }, [executeBlock]);
 
-  if (!message || !message.content) {
+    console.log(response)
+    console.log(response.updated_content)
+
+    updateMessage(message.conversationId, message.content, { content: response.updated_content });
+    setLocalContent(response.updated_content);
+  }, [executeBlock, updateMessage, message]);
+
+  if (!message || !localContent) {
     console.warn("Received empty or invalid message");
     return null;
   }
@@ -158,15 +144,13 @@ function Message({ message, theme }) {
       code: ({ node, inline, className, children, ...props }) => {
         const match = /language-(\w+)/.exec(className || '');
         const language = match ? match[1] : '';
-        const isCodeBlock = !inline && language === 'sh';
+        const isExecutableBlock = !inline && ['sh', 'bash', 'zsh'].includes(language);
 
-        if (isCodeBlock) {
+        if (isExecutableBlock) {
           const codeString = String(children);
           const codeIndex = JSON.stringify(codeString);
-          const executionResult = executionResults[codeIndex];
 
           return (
-            <>
               <CodeBlock theme={theme}>
                 <CodeContent theme={theme}>{children}</CodeContent>
                 <ExecuteButton onClick={() => handleExecute(codeString, codeIndex)}>
@@ -174,12 +158,6 @@ function Message({ message, theme }) {
                   <ExecuteCount>{executeCounts[codeIndex] > 0 ? `(${executeCounts[codeIndex]})` : ''}</ExecuteCount>
                 </ExecuteButton>
               </CodeBlock>
-              {executionResult && (
-                <CodeBlock theme={theme}>
-                  <CodeContent theme={theme}>{executionResult}</CodeContent>
-                </CodeBlock>
-              )}
-            </>
           );
         }
 
@@ -194,12 +172,12 @@ function Message({ message, theme }) {
         <>
           <div>
             <UserPrompt theme={theme}>$ </UserPrompt>
-            {message.content}
+            {localContent}
           </div>
         </>
       ) : (
         <StyledMarkdown theme={theme} components={renderContent()}>
-          {message.content}
+          {localContent}
         </StyledMarkdown>
       )}
       {formattedTimestamp && (

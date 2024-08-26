@@ -11,6 +11,7 @@ export const AppProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [projectPath, setProjectPath] = useState("");
   const [isAutoExecute, setIsAutoExecute] = useState(false);
+  const [model, setModel] = useState("");
 
   const theme = isDarkMode ? darkTheme : lightTheme;
   const initializeAppCalled = useRef(false);
@@ -29,16 +30,23 @@ export const AppProvider = ({ children }) => {
     console.log('initializeApp called');
     try {
       const data = await api.initializeAIState();
-      setConversations(data.available_conversations);
-      setProjectPath(data.project_path || "");
-      setIsAutoExecute(data.is_auto_execute || false);
-      updateConversation(data.conversation_id, {
-        messages: [],
-        systemPrompt: data.system_prompt?.content
-      });
-      initializeAppCalled.current = true;
-      if (data.conversation_id) {
-        navigate(`/chat/${data.conversation_id}`);
+      if (data.status === 'success') {
+        setConversations(data.available_conversations);
+        setProjectPath(data.project_path || "");
+        setIsAutoExecute(!data.skip_code_execution);
+        setModel(data.model || "");
+
+        if (data.conversation_id && data.available_conversations[data.conversation_id]) {
+          updateConversation(data.conversation_id, {
+            messages: [],
+            systemPrompt: data.system_prompt?.content
+          });
+          navigate(`/chat/${data.conversation_id}`);
+        }
+
+        initializeAppCalled.current = true;
+      } else {
+        console.error('Initialization failed:', data.message);
       }
     } catch (error) {
       console.error('Error at initialization:', error);
@@ -111,7 +119,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [api, updateConversation]);
 
-  const updateMessage = useCallback((conversationId, messageTimestamp, updates) => {
+  const updateMessage = useCallback((conversationId, messagecontent, updates) => {
     setConversations(prev => {
       const conversation = prev[conversationId];
       if (!conversation) return prev;
@@ -120,30 +128,30 @@ export const AppProvider = ({ children }) => {
         [conversationId]: {
           ...conversation,
           messages: conversation.messages.map(msg =>
-            msg.timestamp === messageTimestamp ? { ...msg, ...updates } : msg
+            msg.content === messagecontent ? { ...msg, ...updates } : msg
           ),
         }
       };
     });
   }, []);
 
-  const executeBlock = useCallback(async (code) => {
-    const response = await api.executeBlock({ code });
+  const executeBlock = useCallback(async (code, timestamp) => {
+    const response = await api.executeBlock({ code, timestamp });
     console.log('Execution result:', response.result);
-    return response.result; // Return the execution result
-}, [api]);
+    return response;
+  }, [api]);
 
   const toggleAutoExecute = useCallback(async () => {
-    const newAutoExecuteState = !isAutoExecute;
-    const response = await api.toggleAutoExecute({ is_auto_execute: newAutoExecuteState });
+    const response = await api.toggleAutoExecute();
     if (response?.status === 'success') {
-      setIsAutoExecute(newAutoExecuteState);
+      setIsAutoExecute(!response.skip_code_execution);
     }
   }, [isAutoExecute, api]);
 
   const value = useMemo(() => ({
     theme,
     isDarkMode,
+    setIsDarkMode,
     isCollapsed,
     setIsCollapsed,
     projectPath,
@@ -156,9 +164,11 @@ export const AppProvider = ({ children }) => {
     executeBlock,
     isAutoExecute,
     toggleAutoExecute,
+    model,
   }), [
     theme,
     isDarkMode,
+    setIsDarkMode,
     isCollapsed,
     setIsCollapsed,
     projectPath,
@@ -171,6 +181,7 @@ export const AppProvider = ({ children }) => {
     executeBlock,
     isAutoExecute,
     toggleAutoExecute,
+    model,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

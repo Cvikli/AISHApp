@@ -47,6 +47,14 @@ const ConversationId = styled.span`
   color: ${props => props.theme.text};
 `;
 
+const ModelName = styled.span`
+  font-family: 'Arial', sans-serif;
+  font-size: 14px;
+  margin-left: 10px;
+  color: ${props => props.theme.text};
+  opacity: 0.7;
+`;
+
 const ButtonGroup = styled.div`
   margin-left: auto;
   display: flex;
@@ -70,6 +78,9 @@ const AutoExecuteToggle = styled.button`
   cursor: pointer;
   padding: 5px 10px;
   color: ${props => props.theme.textColor};
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 const ProjectPathContainer = styled.div`
@@ -112,6 +123,7 @@ function Header() {
     updateProjectPath,
     isAutoExecute,
     toggleAutoExecute,
+    model,
   } = useAppContext();
   const { conversationId } = useParams();
 
@@ -133,6 +145,10 @@ function Header() {
     closeModal();
   };
 
+  const handleToggleAutoExecute = () => {
+    toggleAutoExecute();
+  };
+
   return (
     <HeaderContainer theme={theme}>
       <CollapseButton onClick={toggleSidebar} theme={theme}>
@@ -140,6 +156,7 @@ function Header() {
       </CollapseButton>
       <Title theme={theme}>
         ORION
+        <ModelName>{model}</ModelName>
         <ConversationId theme={theme}>
           {conversationId ? `${conversationId}` : ''}
         </ConversationId>
@@ -151,8 +168,8 @@ function Header() {
             {projectPath || 'No project selected'}
           </ProjectPathText>
         </ProjectPathContainer>
-        <AutoExecuteToggle onClick={toggleAutoExecute} theme={theme}>
-          {isAutoExecute ? '🔄' : '▶️'}
+        <AutoExecuteToggle onClick={handleToggleAutoExecute} theme={theme} title={isAutoExecute ? "Pause auto-execute" : "Start auto-execute"}>
+          {isAutoExecute ? '⏸️' : '▶️'}
         </AutoExecuteToggle>
         <ThemeToggle onClick={toggleTheme} theme={theme}>
           {isDarkMode ? '☀️' : '🌙'}
