@@ -108,14 +108,15 @@ function ChatComponent() {
   const currentConversation = conversations[conversationId] || { messages: [], systemPrompt: '' };
   const { messages, systemPrompt } = currentConversation;
 
-  useEffect(() => {
-    if (messageEndRef.current && !isSystemPromptOpen) {
-      const isNearBottom = isUserNearBottom();
-      if (isNearBottom) {
-        messageEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
-      }
+  const scrollToBottom = useCallback(() => {
+    if (messageEndRef.current) {
+      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, isSystemPromptOpen, streamedContent]);
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isSystemPromptOpen, streamedContent, scrollToBottom]);
 
   useEffect(() => {
     if (textAreaRef.current) {
@@ -123,15 +124,6 @@ function ChatComponent() {
       textAreaRef.current.style.height = `${Math.min(textAreaRef.current.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
     }
   }, [inputValue]);
-  
-  const isUserNearBottom = () => {
-    if (messageHistoryRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = messageHistoryRef.current;
-      const scrollThreshold = 100; // pixels from bottom
-      return scrollTop + clientHeight >= scrollHeight - scrollThreshold;
-    }
-    return false;
-  };
 
   const resetInputAndSTT = useCallback(async () => {
     if (isSTTActive && sttButtonRef.current) {
@@ -151,12 +143,14 @@ function ChatComponent() {
       setIsTyping(true);
       setInputValue('');
       setStreamedContent('');
+      scrollToBottom();
   
       try {
         await streamProcessMessage(
           trimmedInput,
           (content) => {
             setStreamedContent(prev => prev + content);
+            scrollToBottom();
           },
           (inMeta) => {
             updateMessage(conversationId, trimmedInput, { 
@@ -182,6 +176,7 @@ function ChatComponent() {
             });
             setStreamedContent('');
             setIsTyping(false);
+            scrollToBottom();
           }
         );
       } catch (error) {
