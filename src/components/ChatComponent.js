@@ -127,7 +127,7 @@ function ChatComponent() {
   const isUserNearBottom = () => {
     if (messageHistoryRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = messageHistoryRef.current;
-      const scrollThreshold = 100; // pixels from bottom
+      const scrollThreshold = 300; // pixels from bottom
       return scrollTop + clientHeight >= scrollHeight - scrollThreshold;
     }
     return false;
