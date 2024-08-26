@@ -48,7 +48,8 @@ const Icon = styled.span`
 const STTButton = forwardRef(({ onTranscript, onActiveChange }, ref) => {
   const [isSTTActive, setIsSTTActive] = useState(false);
   const recognitionRef = useRef(null);
-  const transcriptRef = useRef('');
+  const finalTranscriptRef = useRef('');
+  const interimTranscriptRef = useRef('');
 
   const { language, theme } = useAppContext();
 
@@ -67,11 +68,11 @@ const STTButton = forwardRef(({ onTranscript, onActiveChange }, ref) => {
           recognitionRef.current.onend = () => {
             setIsSTTActive(false);
             onActiveChange(false);
-            resolve(transcriptRef.current);
+            resolve(finalTranscriptRef.current);
           };
           recognitionRef.current.stop();
         } else {
-          resolve(transcriptRef.current);
+          resolve(finalTranscriptRef.current);
         }
       });
     }
@@ -98,14 +99,20 @@ const STTButton = forwardRef(({ onTranscript, onActiveChange }, ref) => {
 
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
+            finalTranscript += event.results[i][0].transcript + ' ';
           } else {
             interimTranscript += event.results[i][0].transcript;
           }
         }
 
-        transcriptRef.current = finalTranscript || interimTranscript;
-        onTranscript(transcriptRef.current);
+        if (finalTranscript) {
+          finalTranscriptRef.current += finalTranscript;
+          onTranscript(finalTranscript.trim(), true);
+        }
+        
+        interimTranscriptRef.current = interimTranscript;
+        // Optionally, you can call onTranscript here with the interim result
+        // onTranscript(interimTranscriptRef.current, false);
       };
 
       recognitionRef.current.onerror = (event) => {
@@ -117,6 +124,7 @@ const STTButton = forwardRef(({ onTranscript, onActiveChange }, ref) => {
         stopSTT();
       };
 
+      finalTranscriptRef.current = '';
       recognitionRef.current.start();
       setIsSTTActive(true);
       onActiveChange(true);
