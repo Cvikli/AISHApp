@@ -10,8 +10,9 @@ export const AppProvider = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [projectPath, setProjectPath] = useState("");
-  const [isAutoExecute, setIsAutoExecute] = useState(false);
+  const [isNoAutoExecute, setIsNoAutoExecute] = useState(true);
   const [model, setModel] = useState("");
+  const [language, setLanguage] = useState("en");
 
   const theme = isDarkMode ? darkTheme : lightTheme;
   const initializeAppCalled = useRef(false);
@@ -33,8 +34,9 @@ export const AppProvider = ({ children }) => {
       if (data.status === 'success') {
         setConversations(data.available_conversations);
         setProjectPath(data.project_path || "");
-        setIsAutoExecute(!data.skip_code_execution);
+        setIsNoAutoExecute(data.skip_code_execution);
         setModel(data.model || "");
+        setLanguage(data.language || "en");
 
         if (data.conversation_id && data.available_conversations[data.conversation_id]) {
           updateConversation(data.conversation_id, {
@@ -144,9 +146,9 @@ export const AppProvider = ({ children }) => {
   const toggleAutoExecute = useCallback(async () => {
     const response = await api.toggleAutoExecute();
     if (response?.status === 'success') {
-      setIsAutoExecute(!response.skip_code_execution);
+      setIsNoAutoExecute(response.skip_code_execution);
     }
-  }, [isAutoExecute, api]);
+  }, [api]);
 
   const value = useMemo(() => ({
     theme,
@@ -162,9 +164,11 @@ export const AppProvider = ({ children }) => {
     updateMessage,
     updateProjectPath,
     executeBlock,
-    isAutoExecute,
+    isNoAutoExecute,
     toggleAutoExecute,
     model,
+    language,
+    setLanguage,
   }), [
     theme,
     isDarkMode,
@@ -179,9 +183,11 @@ export const AppProvider = ({ children }) => {
     updateMessage,
     updateProjectPath,
     executeBlock,
-    isAutoExecute,
+    isNoAutoExecute,
     toggleAutoExecute,
     model,
+    language,
+    setLanguage,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

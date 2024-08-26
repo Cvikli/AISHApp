@@ -112,6 +112,15 @@ const FolderButton = styled(Button)`
   flex-shrink: 0;
 `;
 
+const LanguageSelect = styled.select`
+  background-color: ${props => props.theme.inputBackground};
+  color: ${props => props.theme.textColor};
+  border: 1px solid ${props => props.theme.borderColor};
+  padding: 5px;
+  font-size: 14px;
+  cursor: pointer;
+`;
+
 function Header() {
   const {
     theme,
@@ -121,9 +130,11 @@ function Header() {
     setIsCollapsed,
     projectPath,
     updateProjectPath,
-    isAutoExecute,
+    isNoAutoExecute,
     toggleAutoExecute,
     model,
+    language,
+    setLanguage,
   } = useAppContext();
   const { conversationId } = useParams();
 
@@ -149,6 +160,10 @@ function Header() {
     toggleAutoExecute();
   };
 
+  const handleLanguageChange = (e) => {
+    setLanguage(e.target.value);
+  };
+
   return (
     <HeaderContainer theme={theme}>
       <CollapseButton onClick={toggleSidebar} theme={theme}>
@@ -168,8 +183,12 @@ function Header() {
             {projectPath || 'No project selected'}
           </ProjectPathText>
         </ProjectPathContainer>
-        <AutoExecuteToggle onClick={handleToggleAutoExecute} theme={theme} title={isAutoExecute ? "Pause auto-execute" : "Start auto-execute"}>
-          {isAutoExecute ? '⏸️' : '▶️'}
+        <LanguageSelect value={language} onChange={handleLanguageChange} theme={theme}>
+          <option value="en">English</option>
+          <option value="hu">Hungarian</option>
+        </LanguageSelect>
+        <AutoExecuteToggle onClick={handleToggleAutoExecute} theme={theme} title={isNoAutoExecute ? "Pause auto-execute" : "Start auto-execute"}>
+          {isNoAutoExecute ? '⏸️' : '▶️'}
         </AutoExecuteToggle>
         <ThemeToggle onClick={toggleTheme} theme={theme}>
           {isDarkMode ? '☀️' : '🌙'}

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { useParams } from 'react-router-dom';
 import { ScrollableDiv, Button } from './SharedStyles';
@@ -7,6 +7,7 @@ import { useAppContext } from '../contexts/AppContext';
 import Message from './Message';
 import SystemPrompt from './SystemPrompt';
 import { streamProcessMessage } from '../APIstream';
+import STTButton from './STTButton';
 
 const ChatContainer = styled.div`
   display: flex;
@@ -41,7 +42,7 @@ const InputContainer = styled.div`
 const InputWrapper = styled.div`
   display: flex;
   flex-grow: 1;
-  align-items: flex-start;
+  align-items: center;
   background-color: ${props => props.theme.backgroundColor};
 `;
 
@@ -74,6 +75,9 @@ const TextArea = styled.textarea`
 const SendButton = styled(Button)`
   font-size: 16px;
   padding: 5px 10px;
+  margin-left: 2px;
+  height: 40px;
+  width: 80px;
 `;
 
 function ChatComponent() {
@@ -81,7 +85,8 @@ function ChatComponent() {
     theme,
     conversations,
     addMessage,
-    updateMessage
+    updateMessage,
+    projectPath
   } = useAppContext();
 
   const { conversationId } = useParams();
@@ -90,11 +95,14 @@ function ChatComponent() {
   const [isTyping, setIsTyping] = useState(false);
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
   const [streamedContent, setStreamedContent] = useState('');
+  const [isSTTActive, setIsSTTActive] = useState(false);
   const messageEndRef = useRef(null);
   const messageHistoryRef = useRef(null);
   const textAreaRef = useRef(null);
+  const sttButtonRef = useRef(null);
 
   useEffect(() => {
+    setInputValue('');
   }, [conversationId]);
 
   const currentConversation = conversations[conversationId] || { messages: [], systemPrompt: '' };
@@ -125,25 +133,33 @@ function ChatComponent() {
     return false;
   };
 
+  const resetInputAndSTT = useCallback(async () => {
+    if (isSTTActive && sttButtonRef.current) {
+      const finalTranscript = await sttButtonRef.current.stopSTT();
+      setInputValue(prevInput => prevInput || finalTranscript);
+    }
+  }, [isSTTActive]);
 
   const handleSend = async () => {
-    if (inputValue.trim()) {
-      const userMessage = { role: 'user', content: inputValue };
+    await resetInputAndSTT();
+    const trimmedInput = inputValue.trim();
+    
+    if (trimmedInput) {
+      const userMessage = { role: 'user', content: trimmedInput };
       addMessage(conversationId, userMessage);
   
       setIsTyping(true);
       setInputValue('');
       setStreamedContent('');
   
-  
       try {
         await streamProcessMessage(
-          inputValue,
+          trimmedInput,
           (content) => {
             setStreamedContent(prev => prev + content);
           },
           (inMeta) => {
-            updateMessage(conversationId, inputValue, { 
+            updateMessage(conversationId, trimmedInput, { 
               id: inMeta.id,
               input_tokens: inMeta.input_tokens,
               output_tokens: inMeta.output_tokens,
@@ -175,6 +191,25 @@ function ChatComponent() {
     }
   };
 
+  const handleSTTTranscript = (transcript) => {
+    setInputValue(transcript);
+  };
+
+  const handleSTTActiveChange = (active) => {
+    setIsSTTActive(active);
+  };
+
+  const handleInputChange = (e) => {
+    setInputValue(e.target.value);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
     <ChatContainer theme={theme}>
       <MessageHistory ref={messageHistoryRef} theme={theme}>
@@ -203,13 +238,18 @@ function ChatComponent() {
           <TextArea 
             ref={textAreaRef}
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend())}
-            placeholder="Enter command..."
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder={`Enter command... ${projectPath ? `(Project: ${projectPath})` : ''}`}
             rows={1}
             theme={theme}
           />
         </InputWrapper>
+        <STTButton 
+          ref={sttButtonRef}
+          onTranscript={handleSTTTranscript} 
+          onActiveChange={handleSTTActiveChange} 
+        />
         <SendButton onClick={handleSend}>Send</SendButton>
       </InputContainer>
     </ChatContainer>

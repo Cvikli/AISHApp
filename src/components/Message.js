@@ -123,9 +123,6 @@ function Message({ message, theme }) {
       [index]: (prevCounts[index] || 0) + 1
     }));
 
-    console.log(response)
-    console.log(response.updated_content)
-
     updateMessage(message.conversationId, message.content, { content: response.updated_content });
     setLocalContent(response.updated_content);
   }, [executeBlock, updateMessage, message]);
