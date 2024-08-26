@@ -35,7 +35,6 @@ const Title = styled.h1`
   margin: 0 14px;
   padding-top: 5px;
   line-height: ${HEADER_HEIGHT}px;
-  color: ${props => props.theme.text};
   display: flex;
   align-items: center;
 `;
@@ -44,14 +43,12 @@ const ConversationId = styled.span`
   font-family: 'Arial', sans-serif;
   font-size: 16px;
   margin-left: 22px;
-  color: ${props => props.theme.text};
 `;
 
 const ModelName = styled.span`
   font-family: 'Arial', sans-serif;
   font-size: 14px;
   margin-left: 10px;
-  color: ${props => props.theme.text};
   opacity: 0.7;
 `;
 
@@ -68,7 +65,6 @@ const ThemeToggle = styled.button`
   font-size: 24px;
   cursor: pointer;
   padding: 5px 10px;
-  color: ${props => props.theme.textColor};
 `;
 
 const AutoExecuteToggle = styled.button`
@@ -77,7 +73,6 @@ const AutoExecuteToggle = styled.button`
   font-size: 24px;
   cursor: pointer;
   padding: 5px 10px;
-  color: ${props => props.theme.textColor};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -95,7 +90,6 @@ const ProjectPathContainer = styled.div`
 `;
 
 const ProjectPathText = styled.span`
-  color: ${props => props.theme.textColor};
   font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -113,8 +107,8 @@ const FolderButton = styled(Button)`
 `;
 
 const LanguageSelect = styled.select`
-  background-color: ${props => props.theme.inputBackground};
-  color: ${props => props.theme.textColor};
+  background-color: #1270ff;
+  color: white;
   border: 1px solid ${props => props.theme.borderColor};
   padding: 5px;
   font-size: 14px;

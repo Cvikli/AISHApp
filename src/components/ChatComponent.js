@@ -43,13 +43,13 @@ const InputContainer = styled.div`
 const InputWrapper = styled.div`
   display: flex;
   flex-grow: 1;
-  align-items: center;
+  align-items: flex-start;
   background-color: ${props => props.theme.backgroundColor};
 `;
 
 const Prompt = styled.span`
   color: ${props => props.theme.textColor};
-  padding: 5px 2px;
+  padding: 5px 2px 0 5px;
   font-size: 16px;
 `;
 
@@ -58,7 +58,8 @@ const TextArea = styled.textarea`
   padding: 5px;
   border: none;
   resize: none;
-  min-height: 24px;
+  min-height: 20px;
+  height: 20px;
   max-height: ${MAX_TEXTAREA_HEIGHT}px;
   overflow-y: auto;
   font-family: inherit;
@@ -75,11 +76,25 @@ const TextArea = styled.textarea`
 
 const SendButton = styled(Button)`
   font-size: 16px;
-  padding: 5px 10px;
   margin-left: 2px;
-  height: 40px;
-  width: 80px;
+  height: auto;
+  min-height: 20px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
 `;
+
+const StyledSTTButton = styled(STTButton)`
+  align-self: stretch;
+  height: auto !important;
+  min-height: 20px !important;
+
+  & > button {
+    height: 100% !important;
+    min-height: 34px !important;
+  }
+`;
+
 
 function ChatComponent() {
   const {
@@ -132,7 +147,7 @@ function ChatComponent() {
   useEffect(() => {
     if (textAreaRef.current) {
       textAreaRef.current.style.height = 'auto';
-      textAreaRef.current.style.height = `${Math.min(textAreaRef.current.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
+      textAreaRef.current.style.height = `${Math.max(textAreaRef.current.scrollHeight, 20)}px`;
     }
   }, [inputValue]);
 
@@ -192,12 +207,14 @@ function ChatComponent() {
         />
         {messages.map((message, index) => (
           <Message
+            key={`${message.role}-${index}`}
             message={message}
             theme={theme}
           />
         ))}
         {isReceivingMessage && (
           <Message
+            key="receiving-message"
             message={{content: streamedContent || "AI is typing..."}}
             theme={theme}
           />
@@ -220,12 +237,12 @@ function ChatComponent() {
             theme={theme}
           />
         </InputWrapper>
-        <STTButton 
+        <StyledSTTButton 
           ref={sttButtonRef}
           onTranscript={setInputValue}
           onActiveChange={setIsSTTActive}
         />
-        <SendButton onClick={handleSend}>Send</SendButton>
+        <SendButton onClick={handleSend} theme={theme}>Send</SendButton>
       </InputContainer>
     </ChatContainer>
   );

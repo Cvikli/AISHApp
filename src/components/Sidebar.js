@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppContext } from '../contexts/AppContext';
 import { ScrollableDiv } from './SharedStyles';
@@ -15,7 +15,6 @@ const SidebarContainer = styled.div`
   transition: width 0.3s ease;
   background-color: ${props => props.theme.backgroundColor};
   border-right: 1px solid ${props => props.theme.borderColor};
-  font-family: 'Courier New', monospace;
 `;
 
 const NewConversationButton = styled.button`
@@ -32,7 +31,6 @@ const NewConversationButton = styled.button`
   border-bottom: 1px solid ${props => props.theme.borderColor};
   cursor: pointer;
   color: ${props => props.theme.textColor};
-  font-family: inherit;
   transition: background-color 0.2s ease;
 
   &:hover {
@@ -49,17 +47,7 @@ const ConversationList = styled(ScrollableDiv)`
   flex-grow: 1;
   overflow-y: auto;
 
-  /* Customizing scrollbar */
-  scrollbar-width: thin;
   scrollbar-color: ${props => props.theme.name === 'dark' ? '#555' : '#ccc'} transparent;
-
-  &::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
 
   &::-webkit-scrollbar-thumb {
     background-color: ${props => props.theme.name === 'dark' ? '#555' : '#ccc'};
@@ -71,7 +59,6 @@ const ConversationList = styled(ScrollableDiv)`
 const ConversationItem = styled.div`
   padding: 4px 8px;
   cursor: pointer;
-  color: ${props => props.theme.text};  
   transition: background-color 0.05s ease;
   border-left: 3px solid transparent;
   &:hover {
@@ -122,7 +109,6 @@ function Sidebar() {
     selectConversation(id);
   };
 
-  // Sort conversations by timestamp in descending order
   const sortedConversations = Object.values(conversations).sort((a, b) => 
     new Date(b.timestamp) - new Date(a.timestamp)
   );

@@ -4,18 +4,15 @@ import { Button } from './SharedStyles';
 import { useAppContext } from '../contexts/AppContext';
 
 const STTButtonStyled = styled(Button)`
-  font-size: 16px;
-  padding: 5px 10px;
-  background-color: ${props => props.$isActive ? '#ff4136' : props.theme.backgroundColor};
+  padding: 0px 10px;
+  background-color: '#ff4136';
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 48px;
   border-radius: 0;
   transition: all 0.2s ease-in-out;
   color: ${props => props.$isActive ? 'white' : props.theme.textColor};
-  border: 1px solid ${props => props.$isActive ? '#ff4136' : props.theme.textColor};
 
   &:hover {
     background-color: ${props => props.$isActive ? '#e61e10' : props.theme.hoverColor};
@@ -42,7 +39,7 @@ const STTButtonStyled = styled(Button)`
 `;
 
 const Icon = styled.span`
-  font-size: 20px;
+  font-size: 16px;
 `;
 
 const STTButton = forwardRef(({ onTranscript, onActiveChange }, ref) => {
@@ -111,8 +108,6 @@ const STTButton = forwardRef(({ onTranscript, onActiveChange }, ref) => {
         }
         
         interimTranscriptRef.current = interimTranscript;
-        // Optionally, you can call onTranscript here with the interim result
-        // onTranscript(interimTranscriptRef.current, false);
       };
 
       recognitionRef.current.onerror = (event) => {

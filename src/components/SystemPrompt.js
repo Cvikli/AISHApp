@@ -1,16 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styled from 'styled-components';
-import { Button } from './SharedStyles';
 import { useAppContext } from '../contexts/AppContext';
 
 const SystemPromptContainer = styled.div`
-  background-color: ${props => props.theme.backgroundColor};
   border: 1px solid ${props => props.theme.borderColor};
   border-radius: 4px;
   margin: 10px;
   padding: 0px;
-  color: ${props => props.theme.textColor};
-  font-family: 'Courier New', monospace;
 `;
 
 const TopSection = styled.div`
@@ -45,7 +41,6 @@ const SystemPromptContent = styled.textarea`
   border-top: 1px solid ${props => props.theme.borderColor};
   border-radius: 0px;
   color: ${props => props.theme.name === 'dark' ? '#e0e0e0' : '#333'};
-  font-family: inherit;
   font-size: 16px;
   line-height: 1.4;
   padding: 8px;
@@ -58,14 +53,12 @@ const SystemPromptContent = styled.textarea`
   }
 `;
 
-
 function SystemPrompt({ isOpen, setIsOpen, conversationId }) {
   const { theme, conversations } = useAppContext();
   const systemPrompt = conversations[conversationId]?.systemPrompt || '';
   const [editableMessage, setEditableMessage] = useState(systemPrompt);
   const [isEdited, setIsEdited] = useState(false);
   const textareaRef = useRef(null);
-
 
   useEffect(() => {
     setEditableMessage(systemPrompt);

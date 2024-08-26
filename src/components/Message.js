@@ -21,7 +21,6 @@ const UserPrompt = styled.span`
 
 const Timestamp = styled.div`
   font-size: 14px;
-  color: white;
   opacity: 0.7;
   margin-top: 4px;
 `;
@@ -41,9 +40,6 @@ const StyledMarkdown = styled(ReactMarkdown)`
     border: 1px solid white;
     border-radius: 4px;
     padding: 1px;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 16px;
-    color: ${props => props.theme.textColor};
   }
 
   pre {
@@ -83,8 +79,6 @@ const CodeBlock = styled.div`
 const CodeContent = styled.code`
   display: block;
   color: ${props => props.theme.textColor};
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 16px;
 `;
 
 const formatTimestamp = (ts) => {
