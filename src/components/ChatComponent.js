@@ -28,7 +28,8 @@ const MessageHistory = styled(ScrollableDiv)`
 `;
 
 const BottomPadding = styled.div`
-  height: 36px;
+  height: ${props => props['data-is-receiving'] ? '108px' : '36px'};
+  transition: height 0.3s ease;
 `;
 
 const InputContainer = styled.div`
@@ -92,7 +93,7 @@ function ChatComponent() {
   const { conversationId } = useParams();
 
   const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isReceivingMessage, setIsReceivingMessage] = useState(false);
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
   const [streamedContent, setStreamedContent] = useState('');
   const [isSTTActive, setIsSTTActive] = useState(false);
@@ -101,19 +102,30 @@ function ChatComponent() {
   const textAreaRef = useRef(null);
   const sttButtonRef = useRef(null);
 
-  useEffect(() => {
-    setInputValue('');
-  }, [conversationId]);
-
   const currentConversation = conversations[conversationId] || { messages: [], systemPrompt: '' };
   const { messages, systemPrompt } = currentConversation;
 
+  const checkIfNearBottom = useCallback(() => {
+    if (messageHistoryRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messageHistoryRef.current;
+      const scrollThreshold = 300;
+      return scrollTop + clientHeight >= scrollHeight - scrollThreshold;
+    }
+    return true;
+  }, []);
+
   useEffect(() => {
-    if (messageEndRef.current && !isSystemPromptOpen) {
-      const isNearBottom = isUserNearBottom();
-      if (isNearBottom) {
-        messageEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
-      }
+    const messageHistory = messageHistoryRef.current;
+    if (messageHistory) {
+      const handleScroll = () => (checkIfNearBottom());
+      messageHistory.addEventListener('scroll', handleScroll);
+      return () => messageHistory.removeEventListener('scroll', handleScroll);
+    }
+  }, [checkIfNearBottom]);
+
+  useEffect(() => {
+    if (messageEndRef.current && !isSystemPromptOpen && checkIfNearBottom()) {
+      messageEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
   }, [messages, isSystemPromptOpen, streamedContent]);
 
@@ -123,15 +135,6 @@ function ChatComponent() {
       textAreaRef.current.style.height = `${Math.min(textAreaRef.current.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
     }
   }, [inputValue]);
-  
-  const isUserNearBottom = () => {
-    if (messageHistoryRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = messageHistoryRef.current;
-      const scrollThreshold = 300; // pixels from bottom
-      return scrollTop + clientHeight >= scrollHeight - scrollThreshold;
-    }
-    return false;
-  };
 
   const resetInputAndSTT = useCallback(async () => {
     if (isSTTActive && sttButtonRef.current) {
@@ -148,60 +151,29 @@ function ChatComponent() {
       const userMessage = { role: 'user', content: trimmedInput };
       addMessage(conversationId, userMessage);
   
-      setIsTyping(true);
+      setIsReceivingMessage(true);
       setInputValue('');
       setStreamedContent('');
   
       try {
         await streamProcessMessage(
           trimmedInput,
-          (content) => {
-            setStreamedContent(prev => prev + content);
-          },
-          (inMeta) => {
-            updateMessage(conversationId, trimmedInput, { 
-              id: inMeta.id,
-              input_tokens: inMeta.input_tokens,
-              output_tokens: inMeta.output_tokens,
-              price: inMeta.price,
-              elapsed: inMeta.elapsed,
-              timestamp: inMeta.timestamp,
-            });
-          },
+          (content) => setStreamedContent(prev => prev + content),
+          (inMeta) => updateMessage(conversationId, trimmedInput, inMeta),
           (finalContent, outMeta) => {
-            console.log(outMeta)
-            addMessage(conversationId, { 
-              role: 'assistant', 
-              content: finalContent, 
-              timestamp: outMeta.timestamp,
-              id: outMeta.id,
-              input_tokens: outMeta.input_tokens,
-              output_tokens: outMeta.output_tokens,
-              price: outMeta.price,
-              elapsed: outMeta.elapsed,
-            });
+            addMessage(conversationId, { role: 'assistant', content: finalContent, ...outMeta });
             setStreamedContent('');
-            setIsTyping(false);
+            setIsReceivingMessage(false);
           }
         );
       } catch (error) {
         console.error('Error:', error);
-        setIsTyping(false);
+        setIsReceivingMessage(false);
       }
     }
   };
 
-  const handleSTTTranscript = (transcript) => {
-    setInputValue(transcript);
-  };
-
-  const handleSTTActiveChange = (active) => {
-    setIsSTTActive(active);
-  };
-
-  const handleInputChange = (e) => {
-    setInputValue(e.target.value);
-  };
+  const handleInputChange = (e) => setInputValue(e.target.value);
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -224,13 +196,16 @@ function ChatComponent() {
             theme={theme}
           />
         ))}
-        {isTyping && (
+        {isReceivingMessage && (
           <Message
             message={{content: streamedContent || "AI is typing..."}}
             theme={theme}
           />
         )}
-        <BottomPadding ref={messageEndRef} />
+        <BottomPadding 
+          ref={messageEndRef} 
+          data-is-receiving={isReceivingMessage}
+        />
       </MessageHistory>
       <InputContainer theme={theme}>
         <InputWrapper theme={theme}>
@@ -247,8 +222,8 @@ function ChatComponent() {
         </InputWrapper>
         <STTButton 
           ref={sttButtonRef}
-          onTranscript={handleSTTTranscript} 
-          onActiveChange={handleSTTActiveChange} 
+          onTranscript={setInputValue}
+          onActiveChange={setIsSTTActive}
         />
         <SendButton onClick={handleSend}>Send</SendButton>
       </InputContainer>
