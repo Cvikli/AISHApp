@@ -7,7 +7,7 @@ import { HEADER_HEIGHT } from './Header';
 
 const SidebarContainer = styled.div`
   flex-shrink: 0;
-  width: ${props => props.$isCollapsed ? `${HEADER_HEIGHT}px` : '250px'};
+  width: ${props => props.$isCollapsed ? `${HEADER_HEIGHT}px` : '300px'}; // Adjusted width
   height: 100%;
   overflow: hidden;
   display: flex;
@@ -21,7 +21,7 @@ const NewConversationButton = styled.button`
   width: 100%;
   height: ${HEADER_HEIGHT}px;
   min-height: ${HEADER_HEIGHT}px;
-  font-size: 16px;
+  font-size: 24px;
   display: flex;
   align-items: center;
   justify-content: ${props => props.$isCollapsed ? 'center' : 'flex-start'};
@@ -76,7 +76,6 @@ const ConversationTitle = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 16px;
 `;
 
 const EmptyConversation = styled.div`

@@ -8,7 +8,6 @@ const MessageContainer = styled.div`
   margin: 8px 0;
   padding: 5px 2px;
   font-family: 'Courier New', monospace;
-  font-size: 16px;
   background-color: ${props => props.theme.backgroundColor};
   color: white;
   border-left: ${props => props.$isUser ? `10px solid ${props.theme.textColor}` : 'none'};
@@ -20,14 +19,14 @@ const UserPrompt = styled.span`
 `;
 
 const Timestamp = styled.div`
-  font-size: 14px;
+  font-size: 16px;
   opacity: 0.7;
   margin-top: 4px;
 `;
 
 const MetaInfo = styled.span`
   margin-left: 10px;
-  font-size: 14px;
+  font-size: 16px;
   color: ${props => props.theme.textColor};
 `;
 
@@ -62,7 +61,6 @@ const ExecuteButton = styled(Button)`
   bottom: 5px;
   right: 5px;
   padding: 4px 8px;
-  font-size: 14px;
 `;
 
 const ExecuteCount = styled.span`

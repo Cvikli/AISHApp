@@ -5,7 +5,7 @@ import FolderStructureModal from './FolderStructureModal';
 import { useAppContext } from '../contexts/AppContext';
 import { useParams } from 'react-router-dom';
 
-export const HEADER_HEIGHT = 36;
+export const HEADER_HEIGHT = 48; // Increased header height
 
 const HeaderContainer = styled.div`
   display: flex;
@@ -20,7 +20,7 @@ const CollapseButton = styled.button`
   width: ${HEADER_HEIGHT}px;
   height: ${HEADER_HEIGHT}px;
   border: none;
-  font-size: 18px;
+  font-size: 24px; // Increased font size
   cursor: pointer;
   margin: 0px 4px;
   color: ${props => props.theme.textColor};
@@ -31,7 +31,7 @@ const CollapseButton = styled.button`
 
 const Title = styled.h1`
   font-family: 'Press Start 2P', cursive;
-  font-size: 22px;
+  font-size: 28px;
   margin: 0 14px;
   padding-top: 5px;
   line-height: ${HEADER_HEIGHT}px;
@@ -41,14 +41,14 @@ const Title = styled.h1`
 
 const ConversationId = styled.span`
   font-family: 'Arial', sans-serif;
-  font-size: 16px;
+  font-size: 18px;
   margin-left: 22px;
 `;
 
 const ModelName = styled.span`
   font-family: 'Arial', sans-serif;
-  font-size: 14px;
   margin-left: 10px;
+  font-size: 18px;
   opacity: 0.7;
 `;
 
@@ -62,7 +62,7 @@ const ButtonGroup = styled.div`
 const ThemeToggle = styled.button`
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 28px;
   cursor: pointer;
   padding: 5px 10px;
 `;
@@ -70,7 +70,7 @@ const ThemeToggle = styled.button`
 const AutoExecuteToggle = styled.button`
   background: none;
   border: none;
-  font-size: 24px;
+  font-size: 28px;
   cursor: pointer;
   padding: 5px 10px;
   display: flex;
@@ -90,7 +90,6 @@ const ProjectPathContainer = styled.div`
 `;
 
 const ProjectPathText = styled.span`
-  font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -100,7 +99,6 @@ const ProjectPathText = styled.span`
 
 const FolderButton = styled(Button)`
   padding: 2px 5px;
-  font-size: 16px;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   flex-shrink: 0;
@@ -111,7 +109,6 @@ const LanguageSelect = styled.select`
   color: white;
   border: 1px solid ${props => props.theme.borderColor};
   padding: 5px;
-  font-size: 14px;
   cursor: pointer;
 `;
 

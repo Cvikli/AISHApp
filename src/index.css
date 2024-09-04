@@ -6,6 +6,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 20px;
 }
 
 html, body, #root {
@@ -36,13 +37,9 @@ code {
 }
 
 /* Remove default border-radius from inputs */
-input, textarea, button {
+input, textarea, button, select {
   border-radius: 0;
-}
-
-/* Optional: Add a custom border-radius if desired */
-input, textarea, button {
-  border-radius: 4px;
+  font-size: 20px;
 }
 
 /* Remove default outline and add a custom focus style */

@@ -10,7 +10,6 @@ const DefaultMessage = styled.div`
   align-items: center;
   height: 100%;
   font-family: 'Courier New', monospace;
-  font-size: 16px;
   color: ${props => props.theme.textColor};
   background-color: ${props => props.theme.backgroundColor};
 `;

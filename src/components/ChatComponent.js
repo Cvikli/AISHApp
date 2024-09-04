@@ -15,7 +15,6 @@ const ChatContainer = styled.div`
   height: 100%;
   overflow: hidden;
   font-family: 'Courier New', monospace;
-  font-size: 16px;
   background-color: ${props => props.theme.backgroundColor};
   color: ${props => props.theme.textColor};
 `;
@@ -50,7 +49,6 @@ const InputWrapper = styled.div`
 const Prompt = styled.span`
   color: ${props => props.theme.textColor};
   padding: 5px 2px 0 5px;
-  font-size: 16px;
 `;
 
 const TextArea = styled.textarea`
@@ -59,11 +57,11 @@ const TextArea = styled.textarea`
   border: none;
   resize: none;
   min-height: 20px;
-  height: 20px;
+  height: 24px;
+  font-size: 20px;
   max-height: ${MAX_TEXTAREA_HEIGHT}px;
   overflow-y: auto;
   font-family: inherit;
-  font-size: 16px;
   line-height: 1.2;  
   background-color: transparent;
   color: white;
@@ -75,7 +73,6 @@ const TextArea = styled.textarea`
 `;
 
 const SendButton = styled(Button)`
-  font-size: 16px;
   margin-left: 2px;
   height: auto;
   min-height: 20px;

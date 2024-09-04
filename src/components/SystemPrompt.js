@@ -20,7 +20,6 @@ const ToggleButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 16px;
   color: ${props => props.theme.textColor};
   padding: 5px 10px;
   border-radius: 4px;
@@ -41,7 +40,6 @@ const SystemPromptContent = styled.textarea`
   border-top: 1px solid ${props => props.theme.borderColor};
   border-radius: 0px;
   color: ${props => props.theme.name === 'dark' ? '#e0e0e0' : '#333'};
-  font-size: 16px;
   line-height: 1.4;
   padding: 8px;
   margin-top: 5px;

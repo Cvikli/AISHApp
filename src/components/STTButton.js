@@ -39,7 +39,7 @@ const STTButtonStyled = styled(Button)`
 `;
 
 const Icon = styled.span`
-  font-size: 16px;
+  font-size: 24px;
 `;
 
 const STTButton = forwardRef(({ onTranscript, onActiveChange }, ref) => {
