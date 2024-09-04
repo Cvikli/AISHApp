@@ -104,10 +104,11 @@ const STTButton = forwardRef(({ onTranscript, onActiveChange }, ref) => {
 
         if (finalTranscript) {
           finalTranscriptRef.current += finalTranscript;
-          onTranscript(finalTranscript.trim(), true);
+          onTranscript(finalTranscript, true);
         }
         
         interimTranscriptRef.current = interimTranscript;
+        onTranscript(interimTranscript, false);
       };
 
       recognitionRef.current.onerror = (event) => {
