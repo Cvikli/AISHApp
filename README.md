@@ -3,7 +3,7 @@
 This project is a React-based web interface for an AI-powered shell environment, providing an interactive way to communicate with AI language models.
 
 ## Demo
-@[youtube](https://youtu.be/a4R6D86oBjw)
+<iframe width="560" height="315" src="[https://www.youtube.com/embed/VIDEO_ID](https://youtu.be/a4R6D86oBjw)" frameborder="0" allowfullscreen></iframe>
 *Very basic example but it can do a lot more! It actually created itself so you can imagine.*
 
 
