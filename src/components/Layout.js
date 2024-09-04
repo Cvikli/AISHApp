@@ -7,11 +7,22 @@ import Header from './Header';
 
 const AppContainer = styled.div`
   display: flex;
+  flex-direction: column;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
   background-color: ${props => props.theme.background};
   color: ${props => props.theme.text};
+`;
+
+const HeaderWrapper = styled.div`
+  flex: 0 0 auto;
+`;
+
+const ContentWrapper = styled.div`
+  display: flex;
+  flex: 1;
+  overflow: hidden;
 `;
 
 const MainContent = styled.div`
@@ -20,10 +31,6 @@ const MainContent = styled.div`
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-`;
-
-const HeaderWrapper = styled.div`
-  flex: 0 0 auto;
 `;
 
 const ChatWrapper = styled.div`
@@ -36,15 +43,17 @@ const Layout = () => {
 
   return (
     <AppContainer theme={theme}>
-      <Sidebar />
-      <MainContent>
-        <HeaderWrapper>
-          <Header />
-        </HeaderWrapper>
-        <ChatWrapper>
-          <Outlet />
-        </ChatWrapper>
-      </MainContent>
+      <HeaderWrapper>
+        <Header />
+      </HeaderWrapper>
+      <ContentWrapper>
+        <Sidebar />
+        <MainContent>
+          <ChatWrapper>
+            <Outlet />
+          </ChatWrapper>
+        </MainContent>
+      </ContentWrapper>
     </AppContainer>
   );
 };

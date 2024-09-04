@@ -3,49 +3,39 @@ import { useParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAppContext } from '../contexts/AppContext';
 import { ScrollableDiv } from './SharedStyles';
-import { HEADER_HEIGHT } from './Header';
 
 const SidebarContainer = styled.div`
   flex-shrink: 0;
-  width: ${props => props.$isCollapsed ? `${HEADER_HEIGHT}px` : '300px'};
+  width: ${props => props.$isCollapsed ? '0' : '300px'};
   height: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease;
   background-color: ${props => props.theme.backgroundColor};
-  border-right: 1px solid ${props => props.theme.borderColor};
-`;
+  position: relative;
 
-const NewConversationButton = styled.button`
-  width: 100%;
-  height: ${HEADER_HEIGHT}px;
-  min-height: ${HEADER_HEIGHT}px;
-  font-size: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: ${props => props.$isCollapsed ? 'center' : 'flex-start'};
-  padding: 0 10px;
-  border: none;
-  background-color: ${props => props.theme.backgroundColor};
-  border-bottom: 1px solid ${props => props.theme.borderColor};
-  cursor: pointer;
-  color: ${props => props.theme.textColor};
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: ${props => props.theme.hoverColor};
-  }
-
-  &:focus {
-    outline: none;
-    box-shadow: inset 0 0 0 1px ${props => props.theme.textColor};
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 1px;
+    background-color: ${props => props.theme.borderColor};
+    transform: scaleX(${props => props.$isCollapsed ? 0 : 1});
+    transform-origin: right;
+    transition: transform 0.3s ease;
   }
 `;
 
 const ConversationList = styled(ScrollableDiv)`
   flex-grow: 1;
   overflow-y: auto;
+  width: 300px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  transform: translateX(${props => props.$isCollapsed ? '-300px' : '0'});
+  opacity: ${props => props.$isCollapsed ? '0' : '1'};
 
   scrollbar-color: ${props => props.theme.name === 'dark' ? '#555' : '#ccc'} transparent;
 
@@ -90,7 +80,6 @@ function Sidebar() {
     theme, 
     isCollapsed, 
     conversations, 
-    newConversation,
     selectConversation
   } = useAppContext();
 
@@ -113,33 +102,24 @@ function Sidebar() {
 
   return (
     <SidebarContainer $isCollapsed={isCollapsed} theme={theme}>
-      <NewConversationButton 
-        onClick={newConversation} 
-        theme={theme}
-        $isCollapsed={isCollapsed}
-      >
-        {isCollapsed ? '+' : '+ New Conversation'}
-      </NewConversationButton>
-      {!isCollapsed && (
-        <ConversationList theme={theme}>
-          {sortedConversations.length === 0 ? (
-            <EmptyConversation theme={theme}>No conversations yet</EmptyConversation>
-          ) : (
-            sortedConversations.map((conversation) => (
-              <ConversationItem 
-                key={conversation.id}
-                $isSelected={conversation.id === conversationId}
-                theme={theme}
-                onClick={() => handleConversationClick(conversation.id)}
-              >
-                <ConversationTitle title={formatTitle(conversation.sentence)}>
-                  {formatTitle(conversation.sentence)}
-                </ConversationTitle>
-              </ConversationItem>
-            ))
-          )}
-        </ConversationList>
-      )}
+      <ConversationList theme={theme} $isCollapsed={isCollapsed}>
+        {sortedConversations.length === 0 ? (
+          <EmptyConversation theme={theme}>No conversations yet</EmptyConversation>
+        ) : (
+          sortedConversations.map((conversation) => (
+            <ConversationItem 
+              key={conversation.id}
+              $isSelected={conversation.id === conversationId}
+              theme={theme}
+              onClick={() => handleConversationClick(conversation.id)}
+            >
+              <ConversationTitle title={formatTitle(conversation.sentence)}>
+                {formatTitle(conversation.sentence)}
+              </ConversationTitle>
+            </ConversationItem>
+          ))
+        )}
+      </ConversationList>
     </SidebarContainer>
   );
 }

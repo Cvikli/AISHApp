@@ -13,9 +13,47 @@ const MessageContainer = styled.div`
   border-left: ${props => props.$isUser ? `10px solid ${props.theme.textColor}` : 'none'};
 `;
 
+const UserMessageContainer = styled.div`
+  display: flex;
+  align-items: flex-start;
+`;
+
 const UserPrompt = styled.span`
   color: ${props => props.theme.textColor};
   font-weight: bold;
+  margin-right: 8px;
+  flex-shrink: 0;
+`;
+
+const UserMessageContent = styled.div`
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+
+  & > * {
+    margin: 0;
+    padding: 0;
+  }
+
+  & p {
+    margin: 0;
+    padding: 0;
+  }
+
+  & pre {
+    margin: 0;
+    padding: 8px;
+    background-color: ${props => props.theme.codeBackground};
+    border-radius: 4px;
+    overflow-x: auto;
+  }
+
+  & code {
+    font-family: 'Courier New', monospace;
+  }
 `;
 
 const Timestamp = styled.div`
@@ -47,11 +85,11 @@ const StyledMarkdown = styled(ReactMarkdown)`
     padding: 0px 10px;
     overflow-x: auto;
     position: relative;
-    margin: 5px 0;
+    margin: 0px 0;
 
     code {
       display: block;
-      padding: 10px;
+      padding: 8px;
     }
   }
 `;
@@ -158,12 +196,12 @@ function Message({ message, theme }) {
   return (
     <MessageContainer $isUser={isUser} theme={theme}>
       {isUser ? (
-        <>
-          <div>
-            <UserPrompt theme={theme}>$ </UserPrompt>
-            {localContent}
-          </div>
-        </>
+        <UserMessageContainer>
+          <UserPrompt theme={theme}>$</UserPrompt>
+          <UserMessageContent>
+            <StyledMarkdown>{localContent}</StyledMarkdown>
+          </UserMessageContent>
+        </UserMessageContainer>
       ) : (
         <StyledMarkdown theme={theme} components={renderContent()}>
           {localContent}

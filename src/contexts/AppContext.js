@@ -33,10 +33,10 @@ export const AppProvider = ({ children }) => {
       const data = await api.initializeAIState();
       if (data.status === 'success') {
         setConversations(data.available_conversations);
-        setProjectPath(data.project_path || "");
         setIsNoAutoExecute(data.skip_code_execution);
         setModel(data.model || "");
         setLanguage(data.language || "en");
+        setProjectPath(data.project_path || "");
 
         if (data.conversation_id && data.available_conversations[data.conversation_id]) {
           updateConversation(data.conversation_id, {
@@ -57,7 +57,8 @@ export const AppProvider = ({ children }) => {
 
   useEffect(() => {
     initializeApp();
-  }, []);
+  }, [initializeApp]);
+
 
   const selectConversation = useCallback(async (id) => {
     const response = await api.selectConversation({ conversation_id: id });

@@ -7,13 +7,13 @@ import { useParams } from 'react-router-dom';
 
 export const HEADER_HEIGHT = 48;
 
-
 const HeaderContainer = styled.div`
   display: flex;
   align-items: center;
   height: ${HEADER_HEIGHT}px;
   border-bottom: 1px solid ${props => props.theme.borderColor};
   background-color: ${props => props.theme.backgroundColor};
+  padding: 0 0px;
 `;
 
 const CollapseButton = styled.button`
@@ -21,13 +21,18 @@ const CollapseButton = styled.button`
   width: ${HEADER_HEIGHT}px;
   height: ${HEADER_HEIGHT}px;
   border: none;
-  font-size: 24px; // Increased font size
+  border-right: 1px solid ${props => props.theme.borderColor};
+  font-size: 24px;
   cursor: pointer;
-  margin: 0px 4px;
   color: ${props => props.theme.textColor};
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-right: 4px;
+
+  &:hover {
+    background-color: ${props => props.theme.hoverColor};
+  }
 `;
 
 const Title = styled.h1`
@@ -38,12 +43,15 @@ const Title = styled.h1`
   line-height: ${HEADER_HEIGHT}px;
   display: flex;
   align-items: center;
+  font-weight: 400;
 `;
 
 const ConversationId = styled.span`
   font-family: 'Arial', sans-serif;
   font-size: 18px;
   margin-left: 22px;
+  opacity: 0.7;
+  font-weight: 400;
 `;
 
 const ModelName = styled.span`
@@ -81,13 +89,14 @@ const AutoExecuteToggle = styled.button`
 
 const ProjectPathContainer = styled.div`
   display: flex;
-  align-items: center;
+  align-items: stretch; // Changed from center to stretch
   margin-right: 10px;
   background-color: ${props => props.theme.inputBackground};
   border: 1px solid ${props => props.theme.borderColor};
   border-radius: 4px;
   flex-grow: 1;
   max-width: 600px;
+  height: ${HEADER_HEIGHT - 8}px;
 `;
 
 const ProjectPathText = styled.span`
@@ -96,21 +105,54 @@ const ProjectPathText = styled.span`
   white-space: nowrap;
   padding: 0 5px;
   flex-grow: 1;
+  display: flex;
+  align-items: center; // Center text vertically
 `;
 
 const FolderButton = styled(Button)`
-  padding: 2px 5px;
+  padding: 0 10px;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
   flex-shrink: 0;
+  justify-content: center;
+  font-size: 20px;
+  height: 100%; // Make it full height of the container
 `;
 
 const LanguageSelect = styled.select`
   background-color: #1270ff;
   color: white;
   border: 1px solid ${props => props.theme.borderColor};
-  padding: 5px;
   cursor: pointer;
+  padding: 8px;
+  height: ${HEADER_HEIGHT - 8}px;
+`;
+
+const NewConversationButton = styled(Button)`
+  width: ${props => props.$isCollapsed ? HEADER_HEIGHT : 300}px;
+  height: ${HEADER_HEIGHT}px;
+  min-height: ${HEADER_HEIGHT}px;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: ${props => props.$isCollapsed ? 'center' : 'flex-start'};
+  padding: ${props => props.$isCollapsed ? '0' : '0 10px'};
+  border: none;
+  border-right: 1px solid ${props => props.theme.borderColor};
+  border-bottom: 1px solid ${props => props.theme.borderColor};
+  background-color: ${props => props.theme.backgroundColor};
+  cursor: pointer;
+  color: ${props => props.theme.textColor};
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: ${props => props.theme.hoverColor};
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 1px ${props => props.theme.textColor};
+  }
 `;
 
 function Header() {
@@ -127,7 +169,9 @@ function Header() {
     model,
     language,
     setLanguage,
+    newConversation,
   } = useAppContext();
+
   const { conversationId } = useParams();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -158,6 +202,9 @@ function Header() {
 
   return (
     <HeaderContainer theme={theme}>
+      <NewConversationButton onClick={newConversation} theme={theme} $isCollapsed={isCollapsed}>
+      {isCollapsed ? '+' : '+ New Conversation'}
+      </NewConversationButton>
       <CollapseButton onClick={toggleSidebar} theme={theme}>
         {isCollapsed ? '▶' : '◀'}
       </CollapseButton>

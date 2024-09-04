@@ -22,7 +22,6 @@ const ChatContainer = styled.div`
 const MessageHistory = styled(ScrollableDiv)`
   flex: 1;
   overflow-y: auto;
-  padding: 0px;
   scroll-behavior: smooth;
 `;
 
