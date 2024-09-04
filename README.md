@@ -6,7 +6,7 @@ This project is a React-based web interface for an AI-powered shell environment,
 
 
 https://github.com/user-attachments/assets/28a4e0d5-48a5-474c-a492-d8ce116722b6
-
+*Of course it can do a lot more then this! Basically it wrote most of his own codebase*
 
 
 
