@@ -8,6 +8,7 @@ This project is a React-based web interface for an AI-powered shell environment,
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/a4R6D86oBjw" frameborder="0" allowfullscreen></iframe>
 *Caption: SpaceX Starship Flight Test*
+<iframe width="560" height="315" src="https://www.youtube.com/embed/a4R6D86oBjw" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 
 ## Features
