@@ -3,12 +3,11 @@
 This project is a React-based web interface for an AI-powered shell environment, providing an interactive way to communicate with AI language models.
 
 ## Demo
-<iframe width="560" height="315" src="[https://www.youtube.com/embed/VIDEO_ID](https://youtu.be/a4R6D86oBjw)" frameborder="0" allowfullscreen></iframe>
-*Very basic example but it can do a lot more! It actually created itself so you can imagine.*
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/a4R6D86oBjw" frameborder="0" allowfullscreen></iframe>
-*Caption: SpaceX Starship Flight Test*
-<iframe width="560" height="315" src="https://www.youtube.com/embed/a4R6D86oBjw" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+https://github.com/user-attachments/assets/28a4e0d5-48a5-474c-a492-d8ce116722b6
+
+
 
 
 ## Features
