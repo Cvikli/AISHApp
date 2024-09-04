@@ -7,7 +7,7 @@ import { HEADER_HEIGHT } from './Header';
 
 const SidebarContainer = styled.div`
   flex-shrink: 0;
-  width: ${props => props.$isCollapsed ? `${HEADER_HEIGHT}px` : '300px'}; // Adjusted width
+  width: ${props => props.$isCollapsed ? `${HEADER_HEIGHT}px` : '300px'};
   height: 100%;
   overflow: hidden;
   display: flex;
@@ -94,7 +94,6 @@ function Sidebar() {
     selectConversation
   } = useAppContext();
 
-  
   const { conversationId } = useParams();
 
   const formatTitle = (title) => {
