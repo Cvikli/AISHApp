@@ -3,7 +3,7 @@
 This project is a React-based web interface for an AI-powered shell environment, providing an interactive way to communicate with AI language models.
 
 ## Demo
-![AISHApp demo](https://github.com/user-attachments/assets/59f4639a-926d-449d-903c-8628944ad97c)
+@[youtube](a4R6D86oBjw)
 *Very basic example but it can do a lot more! It actually created itself so you can imagine.*
 
 
