@@ -5,7 +5,8 @@ import FolderStructureModal from './FolderStructureModal';
 import { useAppContext } from '../contexts/AppContext';
 import { useParams } from 'react-router-dom';
 
-export const HEADER_HEIGHT = 48; // Increased header height
+export const HEADER_HEIGHT = 48;
+
 
 const HeaderContainer = styled.div`
   display: flex;
