@@ -36,6 +36,11 @@ This project is a React-based web interface for an AI-powered shell environment,
    ```
 4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
+## TODO
+- [ ] Don't remove the project_path if new conversation selected
+- [ ] History visually not appealing
+- [ ] error print isn't a message and it can cause problem like user, user sequence... also it can go visual glitch till it isn't resolved as it is attached to wrong object intead of messages
+
 ## Contributing
 
 Contributions are welcome. Please feel free to submit a Pull Request.

@@ -7,7 +7,7 @@ const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
   const [conversations, setConversations] = useState({});
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);  // Changed to true
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [projectPath, setProjectPath] = useState("");
   const [isNoAutoExecute, setIsNoAutoExecute] = useState(true);
@@ -89,6 +89,9 @@ export const AppProvider = ({ children }) => {
         messages: [],
         systemPrompt: response.system_prompt?.content || ''
       });
+      if (response.project_path) {
+        setProjectPath(response.project_path);
+      }
       navigate(`/chat/${response.conversation.id}`);
     }
       

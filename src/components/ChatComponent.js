@@ -28,7 +28,7 @@ const MessageHistory = styled(ScrollableDiv)`
 `;
 
 const BottomPadding = styled.div`
-  height: ${props => props['data-is-receiving'] ? '108px' : '36px'};
+  height: ${props => props['data-is-receiving'] ? '148px' : '36px'};
   transition: height 0.3s ease;
 `;
 
@@ -95,7 +95,6 @@ const StyledSTTButton = styled(STTButton)`
   }
 `;
 
-
 function ChatComponent() {
   const {
     theme,
@@ -112,6 +111,8 @@ function ChatComponent() {
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
   const [streamedContent, setStreamedContent] = useState('');
   const [isSTTActive, setIsSTTActive] = useState(false);
+  const [interimInput, setInterimInput] = useState('');
+
   const messageEndRef = useRef(null);
   const messageHistoryRef = useRef(null);
   const textAreaRef = useRef(null);
@@ -188,7 +189,19 @@ function ChatComponent() {
     }
   };
 
-  const handleInputChange = (e) => setInputValue(e.target.value);
+  const handleSTTTranscript = useCallback((transcript, isFinal) => {
+    if (isFinal) {
+      setInputValue(prev => prev + transcript);
+      setInterimInput('');
+    } else {
+      setInterimInput(transcript);
+    }
+  }, []);
+
+  const handleInputChange = (e) => {
+    setInputValue(e.target.value);
+    setInterimInput(''); // Clear interim input when user types
+  };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -229,7 +242,7 @@ function ChatComponent() {
           <Prompt theme={theme}>$</Prompt>
           <TextArea 
             ref={textAreaRef}
-            value={inputValue}
+            value={inputValue + interimInput}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder={`Enter command... ${projectPath ? `(Project: ${projectPath})` : ''}`}
@@ -239,7 +252,7 @@ function ChatComponent() {
         </InputWrapper>
         <StyledSTTButton 
           ref={sttButtonRef}
-          onTranscript={setInputValue}
+          onTranscript={handleSTTTranscript}
           onActiveChange={setIsSTTActive}
         />
         <SendButton onClick={handleSend} theme={theme}>Send</SendButton>

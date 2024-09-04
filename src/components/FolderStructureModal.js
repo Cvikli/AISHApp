@@ -102,7 +102,7 @@ const FolderStructureModal = ({ isOpen, onClose, theme, projectPath, setProjectP
     try {
       const data = await api.listItems({ path });
       if (data.status === 'success') {
-        setCurrentPath(data.current_path);
+        setCurrentPath(data.project_path);
         setItems([
           { name: '..', isFolder: true, isParent: true },
           ...data.folders.map(folder => ({ name: folder, isFolder: true })),
