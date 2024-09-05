@@ -52,8 +52,8 @@ export const streamProcessMessage = async (message, onMessage, user_meta, onDone
               onDone(data);
             }
           }
+          buffer = '';
         }
-        buffer = '';
       } else {
         buffer += line + '\n';
       }

@@ -25,30 +25,27 @@ const UserPrompt = styled.span`
   flex-shrink: 0;
 `;
 
-const UserMessageContent = styled.div`
-  flex: 1;
-  margin: 0;
+const MessageContent = styled.div`
+  margin: 0px;
   padding: 0;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
 
-  & > * {
-    margin: 0;
+  p {
+    margin: 0px;
     padding: 0;
   }
 
-  & p {
-    margin: 0;
-    padding: 0;
+  ul, ol {
+    margin: 1px 0 1px 20px;
+    padding-left: 20px;
   }
 
-  & pre {
-    margin: 0;
-    padding: 8px;
-    background-color: ${props => props.theme.codeBackground};
-    border-radius: 4px;
-    overflow-x: auto;
+  li {
+    margin: 4px 0 4px 20px;
+    padding-left: 20px;
+  }
+
+  li > p {
+    display: inline;
   }
 
   & code {
@@ -189,7 +186,11 @@ function Message({ message, theme }) {
         }
 
         return <code className={className} {...props}>{children}</code>;
-      }
+      },
+      p: ({ children }) => <p>{children}</p>,
+      ul: ({ children }) => <ul>{children}</ul>,
+      ol: ({ children }) => <ol>{children}</ol>,
+      li: ({ children }) => <li>{children}</li>,
     };
   };
 
@@ -198,14 +199,16 @@ function Message({ message, theme }) {
       {isUser ? (
         <UserMessageContainer>
           <UserPrompt theme={theme}>$</UserPrompt>
-          <UserMessageContent>
+          <MessageContent>
             <StyledMarkdown>{localContent}</StyledMarkdown>
-          </UserMessageContent>
+          </MessageContent>
         </UserMessageContainer>
       ) : (
-        <StyledMarkdown theme={theme} components={renderContent()}>
-          {localContent}
-        </StyledMarkdown>
+        <MessageContent>
+          <StyledMarkdown theme={theme} components={renderContent()}>
+            {localContent}
+          </StyledMarkdown>
+        </MessageContent>
       )}
       {formattedTimestamp && (
         <Timestamp theme={theme}>

@@ -47,10 +47,13 @@ apt install byobu
 4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ## TODO
-- [x] Don't remove the project_path if new conversation selected
 - [ ] When there is no server then we need to show a prompt how to set up. Also a button to refresh the page
   - [ ] Conversation is actually selected as we can see it from the URL!
 - [ ] error print isn't a message and it can cause problem like user, user sequence... also it can go visual glitch till it isn't resolved as it is attached to wrong object intead of messages
+- [x] Don't remove the project_path if new conversation selected
+- [x] Voice activation of speech recognition. THINK ABOUT how to close the conversation via speech (Or the AI will guess a solution for this)!
+- [x] Jump to bottom
+- [x] lists formatting is wrong
 - [x] Multiline handling with the user messages too
 - [x] History empty bar should be removed... 
 - [x] new conversation should go to the header...

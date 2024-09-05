@@ -1,41 +1,67 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useMemo, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAPI } from '../API';
 import { lightTheme, darkTheme } from '../theme';
+import { setCookie, getCookie } from '../cookies';
 
 const AppContext = createContext();
 
+const VoiceState = {
+  INACTIVE: 'INACTIVE',
+  WAKE_WORD_LISTENING: 'WAKE_WORD_LISTENING',
+  COMMAND_LISTENING: 'COMMAND_LISTENING',
+  VOICE_ACTIVATED_COMMAND_LISTENING: 'VOICE_ACTIVATED_COMMAND_LISTENING',
+};
+
+const LANGUAGE_CODES = {
+  en: 'en-US',
+  hu: 'hu-HU',
+  de: 'de-DE',
+  fr: 'fr-FR',
+  es: 'es-ES',
+  it: 'it-IT',
+  ja: 'ja-JP',
+  ko: 'ko-KR',
+  zh: 'zh-CN',
+};
+
 export const AppProvider = ({ children }) => {
+  const [availableMicrophones, setAvailableMicrophones] = useState([]);
+  const [selectedMicrophone, setSelectedMicrophone] = useState(null);
   const [conversations, setConversations] = useState({});
-  const [isCollapsed, setIsCollapsed] = useState(true);  // Changed to true
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [projectPath, setProjectPath] = useState("");
   const [isNoAutoExecute, setIsNoAutoExecute] = useState(true);
   const [model, setModel] = useState("");
-  const [language, setLanguage] = useState("en");
+  const [isRecognizing, setIsRecognizing] = useState(false);
+  const [language, setLanguage] = useState(() => getCookie('language') || 'en');
+  const [voiceState, setVoiceState] = useState(() => getCookie('voiceState') || VoiceState.INACTIVE);
+  const [finalTranscript, setFinalTranscript] = useState('');
+  const [interimTranscript, setInterimTranscript] = useState('');
 
   const theme = isDarkMode ? darkTheme : lightTheme;
-  const initializeAppCalled = useRef(false);
   const navigate = useNavigate();
   const api = useAPI();
 
-  const updateConversation = useCallback((id, updates) => {
-    setConversations(prev => ({
-      ...prev,
-      [id]: { ...prev[id], ...updates }
-    }));
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+    initializeApp();
   }, []);
 
+  useEffect(() => {
+    setCookie('language', language);
+    setCookie('voiceState', voiceState);
+  }, [language, voiceState]);
+
   const initializeApp = useCallback(async () => {
-    if (initializeAppCalled.current) return;
-    console.log('initializeApp called');
     try {
       const data = await api.initializeAIState();
       if (data.status === 'success') {
         setConversations(data.available_conversations);
         setIsNoAutoExecute(data.skip_code_execution);
         setModel(data.model || "");
-        setLanguage(data.language || "en");
         setProjectPath(data.project_path || "");
 
         if (data.conversation_id && data.available_conversations[data.conversation_id]) {
@@ -45,25 +71,21 @@ export const AppProvider = ({ children }) => {
           });
           navigate(`/chat/${data.conversation_id}`);
         }
-
-        initializeAppCalled.current = true;
-      } else {
-        console.error('Initialization failed:', data.message);
       }
     } catch (error) {
       console.error('Error at initialization:', error);
     }
-  }, [api, navigate, updateConversation]);
+  }, [api, navigate]);
 
-  useEffect(() => {
-    initializeApp();
-  }, [initializeApp]);
-
+  const updateConversation = useCallback((id, updates) => {
+    setConversations(prev => ({
+      ...prev,
+      [id]: { ...prev[id], ...updates }
+    }));
+  }, []);
 
   const selectConversation = useCallback(async (id) => {
     const response = await api.selectConversation({ conversation_id: id });
-    console.log('API Response:', response);
-
     if (response?.status === 'success') {
       updateConversation(id, {
         messages: response.history || [],
@@ -102,8 +124,7 @@ export const AppProvider = ({ children }) => {
     setConversations(prev => {
       const conversation = prev[conversationId];
       if (!conversation) return prev;
-      console.log("conversation")
-      console.log(conversation)
+      console.log("conversation", conversation)
       return {
         ...prev,
         [conversationId]: {
@@ -125,7 +146,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [api, updateConversation]);
 
-  const updateMessage = useCallback((conversationId, messagecontent, updates) => {
+  const updateMessage = useCallback((conversationId, messageContent, updates) => {
     setConversations(prev => {
       const conversation = prev[conversationId];
       if (!conversation) return prev;
@@ -134,7 +155,7 @@ export const AppProvider = ({ children }) => {
         [conversationId]: {
           ...conversation,
           messages: conversation.messages.map(msg =>
-            msg.content === messagecontent ? { ...msg, ...updates } : msg
+            msg.content === messageContent ? { ...msg, ...updates } : msg
           ),
         }
       };
@@ -142,9 +163,7 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const executeBlock = useCallback(async (code, timestamp) => {
-    const response = await api.executeBlock({ code, timestamp });
-    console.log('Execution result:', response.result);
-    return response;
+    return await api.executeBlock({ code, timestamp });
   }, [api]);
 
   const toggleAutoExecute = useCallback(async () => {
@@ -153,6 +172,135 @@ export const AppProvider = ({ children }) => {
       setIsNoAutoExecute(response.skip_code_execution);
     }
   }, [api]);
+
+  const handleLanguage = useCallback((newLanguage) => {
+    setLanguage(newLanguage);
+    setCookie('language', newLanguage);
+  }, []);
+
+  const getMicrophones = useCallback(async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const microphones = devices.filter(device => device.kind === 'audioinput');
+      setAvailableMicrophones(microphones);
+      if (microphones.length > 0 && !selectedMicrophone) {
+        setSelectedMicrophone(microphones[0].deviceId);
+      }
+    } catch (error) {
+      console.error('Error getting microphones:', error);
+    }
+  }, [selectedMicrophone]);
+
+  useEffect(() => {
+    getMicrophones();
+  }, [getMicrophones]);
+
+  const toggleVoiceActivation = useCallback(() => {
+    setVoiceState(prevState => {
+      switch (prevState) {
+        case VoiceState.INACTIVE: return VoiceState.WAKE_WORD_LISTENING;
+        case VoiceState.WAKE_WORD_LISTENING: return VoiceState.INACTIVE;
+        case VoiceState.VOICE_ACTIVATED_COMMAND_LISTENING: return VoiceState.COMMAND_LISTENING;
+        case VoiceState.COMMAND_LISTENING: return VoiceState.COMMAND_LISTENING;
+        default: return VoiceState.INACTIVE;
+      }
+    });
+  }, []);
+
+  const toggleSTTListening = useCallback(() => {
+    setVoiceState(prevState => {
+      switch (prevState) {
+        case VoiceState.INACTIVE: return VoiceState.COMMAND_LISTENING;
+        case VoiceState.WAKE_WORD_LISTENING: return VoiceState.VOICE_ACTIVATED_COMMAND_LISTENING;
+        case VoiceState.VOICE_ACTIVATED_COMMAND_LISTENING: return VoiceState.WAKE_WORD_LISTENING;
+        case VoiceState.COMMAND_LISTENING: return VoiceState.INACTIVE;
+        default: return VoiceState.INACTIVE;
+      }
+    });
+  }, []);
+
+  const initializeSpeechRecognition = useCallback(() => {
+    if ('webkitSpeechRecognition' in window) {
+      const recognition = new window.webkitSpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = LANGUAGE_CODES[language] || 'en-US';
+
+      recognition.onresult = (event) => {
+        if (voiceState === VoiceState.INACTIVE) return;
+        let interimTranscript = '';
+        let finalTranscriptPart = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscriptPart += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        const lowercaseTranscript = (finalTranscriptPart + ' ' + interimTranscript).toLowerCase();
+        console.log('Current transcript:', lowercaseTranscript);
+
+        if (voiceState === VoiceState.WAKE_WORD_LISTENING && (lowercaseTranscript.includes('orion') || lowercaseTranscript.includes('ai'))) {
+          console.log('Wake word detected');
+          setVoiceState(VoiceState.VOICE_ACTIVATED_COMMAND_LISTENING);
+          setFinalTranscript('');
+          setInterimTranscript('');
+          interimTranscript = '';
+          finalTranscriptPart = '';
+        } else if (voiceState === VoiceState.WAKE_WORD_LISTENING){
+          setFinalTranscript('');
+        } else if (voiceState === VoiceState.COMMAND_LISTENING || voiceState === VoiceState.VOICE_ACTIVATED_COMMAND_LISTENING) {
+          setFinalTranscript(prev => prev + finalTranscriptPart);
+          setInterimTranscript(interimTranscript);
+        }
+      };
+      recognition.onstart = () =>  { setIsRecognizing(true) };
+      recognition.onend = () => { setIsRecognizing(false) };
+    
+      recognition.onerror = (event) => {
+        console.error('Speech recognition error', event.error);
+        setIsRecognizing(false)
+      };
+
+      recognitionRef.current = recognition;
+    } else {
+      console.log('webkitSpeechRecognition not available');
+    }
+  }, [language, voiceState]);
+
+  useEffect(() => {
+    initializeSpeechRecognition();
+    // Cleanup function to stop recognition when component unmounts
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, [initializeSpeechRecognition]);
+
+  useEffect(() => {
+      if (voiceState === VoiceState.INACTIVE) {
+        if (recognitionRef.current) {
+          recognitionRef.current.stop();
+          console.log('Stopped speech recognition');
+        }
+      } else {
+        if (!isRecognizing) {
+          if (recognitionRef.current) {
+            recognitionRef.current.start()
+            console.log('Started speech recognition');
+          } else {
+            console.log('The speech recognition is still not ready!');
+          };
+        } else {
+          console.log('Speech recognition is already running');
+        }
+      }
+  }, [voiceState, isRecognizing]);
+
 
   const value = useMemo(() => ({
     theme,
@@ -172,7 +320,16 @@ export const AppProvider = ({ children }) => {
     toggleAutoExecute,
     model,
     language,
-    setLanguage,
+    handleLanguage,
+    interimTranscript,
+    finalTranscript,
+    setFinalTranscript,
+    availableMicrophones, 
+    setSelectedMicrophone, 
+    voiceState,
+    setVoiceState,
+    toggleVoiceActivation,
+    toggleSTTListening,
   }), [
     theme,
     isDarkMode,
@@ -191,7 +348,16 @@ export const AppProvider = ({ children }) => {
     toggleAutoExecute,
     model,
     language,
-    setLanguage,
+    handleLanguage,
+    interimTranscript,
+    finalTranscript,
+    setFinalTranscript,
+    availableMicrophones, 
+    setSelectedMicrophone,
+    voiceState,
+    setVoiceState,
+    toggleVoiceActivation,
+    toggleSTTListening,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

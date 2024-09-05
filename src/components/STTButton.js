@@ -1,11 +1,17 @@
-import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef } from 'react';
 import styled from 'styled-components';
 import { Button } from './SharedStyles';
 import { useAppContext } from '../contexts/AppContext';
 
+const ButtonGroup = styled.div`
+  display: flex;
+  height: 100%;
+  position: relative;
+`;
+
 const STTButtonStyled = styled(Button)`
   padding: 0px 10px;
-  background-color: '#ff4136';
+  background-color: ${props => props.$isActive ? '#ff4136' : '#1270ff'};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -38,114 +44,140 @@ const STTButtonStyled = styled(Button)`
   }
 `;
 
+const MicrophoneSelectButton = styled(Button)`
+  padding: 0px 5px;
+  background-color: ${props => props.theme.backgroundColor};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  border-radius: 0;
+  border-left: 1px solid ${props => props.theme.borderColor};
+
+  &:hover {
+    background-color: ${props => props.theme.hoverColor};
+  }
+`;
+
 const Icon = styled.span`
   font-size: 24px;
 `;
 
-const STTButton = forwardRef(({ onTranscript, onActiveChange }, ref) => {
-  const [isSTTActive, setIsSTTActive] = useState(false);
-  const recognitionRef = useRef(null);
-  const finalTranscriptRef = useRef('');
-  const interimTranscriptRef = useRef('');
 
-  const { language, theme } = useAppContext();
+const MicrophoneList = styled.ul`
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  min-width: 200px;
+  max-width: 90vw;
+  padding: 5px;
+  border: 1px solid ${props => props.theme.borderColor};
+  border-radius: 4px;
+  background-color: ${props => props.theme.backgroundColor};
+  color: ${props => props.theme.textColor};
+  z-index: 1000;
+  list-style-type: none;
+  margin: 0;
+  overflow-y: auto;
+  white-space: nowrap;
+`;
+
+const MicrophoneItem = styled.li`
+  padding: 8px 10px;
+  cursor: pointer;
+  &:hover {
+    background-color: ${props => props.theme.hoverColor};
+  }
+`;
+
+const STTButton = forwardRef(({ onActiveChange }, ref) => {
+  const [showMicrophoneList, setShowMicrophoneList] = useState(false);
+  const buttonGroupRef = useRef(null);
+  const { 
+    theme, 
+    voiceState,
+    toggleSTTListening, 
+    availableMicrophones, 
+    setSelectedMicrophone 
+  } = useAppContext();
+
+  const isSTTActive = voiceState === 'COMMAND_LISTENING' || voiceState === 'VOICE_ACTIVATED_COMMAND_LISTENING';
 
   useEffect(() => {
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
+    onActiveChange(isSTTActive);
+  }, [isSTTActive, onActiveChange]);
+
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (buttonGroupRef.current && !buttonGroupRef.current.contains(event.target)) {
+        setShowMicrophoneList(false);
       }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
   useImperativeHandle(ref, () => ({
-    stopSTT: () => {
-      return new Promise((resolve) => {
-        if (recognitionRef.current) {
-          recognitionRef.current.onend = () => {
-            setIsSTTActive(false);
-            onActiveChange(false);
-            resolve(finalTranscriptRef.current);
-          };
-          recognitionRef.current.stop();
-        } else {
-          resolve(finalTranscriptRef.current);
-        }
-      });
+    startListening: () => {
+      console.log('STTButton: startListening called');
+      if (!isSTTActive) {
+        toggleSTTListening();
+      }
+    },
+    stopListening: () => {
+      console.log('STTButton: stopListening called');
+      if (isSTTActive) {
+        toggleSTTListening();
+      }
     }
   }));
 
-  const toggleSTT = () => {
-    if (isSTTActive) {
-      stopSTT();
-    } else {
-      startSTT();
-    }
+  const handleMicrophoneSelectToggle = () => {
+    setShowMicrophoneList(!showMicrophoneList);
   };
 
-  const startSTT = () => {
-    if ('webkitSpeechRecognition' in window) {
-      recognitionRef.current = new window.webkitSpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = language === 'hu' ? 'hu-HU' : 'en-US';
-
-      recognitionRef.current.onresult = (event) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript + ' ';
-          } else {
-            interimTranscript += event.results[i][0].transcript;
-          }
-        }
-
-        if (finalTranscript) {
-          finalTranscriptRef.current += finalTranscript;
-          onTranscript(finalTranscript, true);
-        }
-        
-        interimTranscriptRef.current = interimTranscript;
-        onTranscript(interimTranscript, false);
-      };
-
-      recognitionRef.current.onerror = (event) => {
-        console.error('Speech recognition error', event.error);
-        stopSTT();
-      };
-
-      recognitionRef.current.onend = () => {
-        stopSTT();
-      };
-
-      finalTranscriptRef.current = '';
-      recognitionRef.current.start();
-      setIsSTTActive(true);
-      onActiveChange(true);
-    } else {
-      console.error('Web Speech API is not supported in this browser');
-    }
+  const handleMicrophoneSelect = (microphoneId) => {
+    setSelectedMicrophone(microphoneId);
+    setShowMicrophoneList(false);
   };
-
-  const stopSTT = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
-    setIsSTTActive(false);
-    onActiveChange(false);
+  const handleSTTButtonClick = () => {
+    toggleSTTListening();
   };
 
   return (
-    <STTButtonStyled 
-      onClick={toggleSTT} 
-      $isActive={isSTTActive} 
-      title={isSTTActive ? "Stop listening" : "Start listening"}
-      theme={theme}
-    >
-      <Icon>{isSTTActive ? '⏹️' : '🎙️'}</Icon>
-    </STTButtonStyled>
+    <ButtonGroup ref={buttonGroupRef}>
+      <STTButtonStyled 
+        onClick={handleSTTButtonClick} 
+        $isActive={isSTTActive} 
+        title={isSTTActive ? "Stop listening" : "Start listening"}
+        theme={theme}
+      >
+        <Icon>{isSTTActive ? '⏹️' : '🎙️'}</Icon>
+      </STTButtonStyled>
+      <MicrophoneSelectButton
+        onClick={handleMicrophoneSelectToggle}
+        title="Select microphone"
+        theme={theme}
+      >
+        ▼
+      </MicrophoneSelectButton>
+      {showMicrophoneList && (
+        <MicrophoneList theme={theme}>
+          {availableMicrophones.map(mic => (
+            <MicrophoneItem 
+              key={mic.deviceId} 
+              onClick={() => handleMicrophoneSelect(mic.deviceId)}
+              theme={theme}
+            >
+              {mic.label || `Microphone ${mic.deviceId}`}
+            </MicrophoneItem>
+          ))}
+        </MicrophoneList>
+      )}
+    </ButtonGroup>
   );
 });
 

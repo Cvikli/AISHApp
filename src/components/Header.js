@@ -4,6 +4,7 @@ import { Button } from './SharedStyles';
 import FolderStructureModal from './FolderStructureModal';
 import { useAppContext } from '../contexts/AppContext';
 import { useParams } from 'react-router-dom';
+import VoiceActivationButton from './VoiceActivationButton';
 
 export const HEADER_HEIGHT = 48;
 
@@ -155,6 +156,13 @@ const NewConversationButton = styled(Button)`
   }
 `;
 
+const VoiceActivationWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
+  padding: 0 10px;
+`;
+
 function Header() {
   const {
     theme,
@@ -168,7 +176,7 @@ function Header() {
     toggleAutoExecute,
     model,
     language,
-    setLanguage,
+    handleLanguage,
     newConversation,
   } = useAppContext();
 
@@ -197,19 +205,22 @@ function Header() {
   };
 
   const handleLanguageChange = (e) => {
-    setLanguage(e.target.value);
+    handleLanguage(e.target.value);
   };
 
   return (
     <HeaderContainer theme={theme}>
       <NewConversationButton onClick={newConversation} theme={theme} $isCollapsed={isCollapsed}>
-      {isCollapsed ? '+' : '+ New Conversation'}
+        {isCollapsed ? '+' : '+ New Conversation'}
       </NewConversationButton>
       <CollapseButton onClick={toggleSidebar} theme={theme}>
         {isCollapsed ? '▶' : '◀'}
       </CollapseButton>
       <Title theme={theme}>
         ORION
+        <VoiceActivationWrapper>
+          <VoiceActivationButton />
+        </VoiceActivationWrapper>
         <ModelName>{model}</ModelName>
         <ConversationId theme={theme}>
           {conversationId ? `${conversationId}` : ''}
@@ -225,6 +236,13 @@ function Header() {
         <LanguageSelect value={language} onChange={handleLanguageChange} theme={theme}>
           <option value="en">English</option>
           <option value="hu">Hungarian</option>
+          <option value="de">German</option>
+          <option value="fr">French</option>
+          <option value="es">Spanish</option>
+          <option value="it">Italian</option>
+          <option value="ja">Japanese</option>
+          <option value="ko">Korean</option>
+          <option value="zh">Chinese</option>
         </LanguageSelect>
         <AutoExecuteToggle onClick={handleToggleAutoExecute} theme={theme} title={isNoAutoExecute ? "Pause auto-execute" : "Start auto-execute"}>
           {isNoAutoExecute ? '⏸️' : '▶️'}
