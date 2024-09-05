@@ -212,8 +212,14 @@ export const AppProvider = ({ children }) => {
       switch (prevState) {
         case VoiceState.INACTIVE: return VoiceState.COMMAND_LISTENING;
         case VoiceState.WAKE_WORD_LISTENING: return VoiceState.VOICE_ACTIVATED_COMMAND_LISTENING;
-        case VoiceState.VOICE_ACTIVATED_COMMAND_LISTENING: return VoiceState.WAKE_WORD_LISTENING;
-        case VoiceState.COMMAND_LISTENING: return VoiceState.INACTIVE;
+        case VoiceState.VOICE_ACTIVATED_COMMAND_LISTENING: 
+          setFinalTranscript(prev => prev + ' ' + interimTranscript)
+          setInterimTranscript('');
+          return VoiceState.WAKE_WORD_LISTENING;
+        case VoiceState.COMMAND_LISTENING: 
+          setFinalTranscript(prev => prev +  ' ' + interimTranscript)  
+          setInterimTranscript('');
+          return VoiceState.INACTIVE;
         default: return VoiceState.INACTIVE;
       }
     });

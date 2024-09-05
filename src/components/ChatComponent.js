@@ -222,7 +222,7 @@ function ChatComponent() {
     if (isSTTActive) {
       toggleSTTListening();
     }
-    const trimmedInput = inputValue.trim();
+    const trimmedInput = inputValue.trim() + ' ' + interimTranscript;
     
     if (trimmedInput) {
       const userMessage = { role: 'user', content: trimmedInput };
@@ -275,7 +275,11 @@ function ChatComponent() {
       if (finalTranscript) {
         setInputValue(prev => prev + finalTranscript);
         setFinalTranscript('');
-        
+      }
+    } else {
+      if (finalTranscript) {
+        setInputValue(prev => prev + finalTranscript);
+        setFinalTranscript('');
       }
     }
   }, [finalTranscript, interimTranscript]);

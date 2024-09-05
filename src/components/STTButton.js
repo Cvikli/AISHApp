@@ -120,20 +120,6 @@ const STTButton = forwardRef(({ onActiveChange }, ref) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  useImperativeHandle(ref, () => ({
-    startListening: () => {
-      console.log('STTButton: startListening called');
-      if (!isSTTActive) {
-        toggleSTTListening();
-      }
-    },
-    stopListening: () => {
-      console.log('STTButton: stopListening called');
-      if (isSTTActive) {
-        toggleSTTListening();
-      }
-    }
-  }));
 
   const handleMicrophoneSelectToggle = () => {
     setShowMicrophoneList(!showMicrophoneList);
