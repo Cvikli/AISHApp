@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAPI } from '../API';
+import axios from 'axios';
 import { lightTheme, darkTheme } from '../theme';
 import { setCookie, getCookie } from '../cookies';
 
@@ -35,25 +35,65 @@ export const AppProvider = ({ children }) => {
   const [isNoAutoExecute, setIsNoAutoExecute] = useState(true);
   const [model, setModel] = useState("");
   const [isRecognizing, setIsRecognizing] = useState(false);
-  const [language, setLanguage] = useState(() => getCookie('language') || 'en');
-  const [voiceState, setVoiceState] = useState(() => getCookie('voiceState') || VoiceState.INACTIVE);
   const [finalTranscript, setFinalTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
+  const [language, setLanguage] = useState(() => getCookie('language') || 'en');
+  const [voiceState, setVoiceState] = useState(() => getCookie('voiceState') || VoiceState.INACTIVE);
+  const [serverIP, setServerIP] = useState(() => getCookie('serverIP') || 'localhost');
+  const [serverPort, setServerPort] = useState(() => getCookie('serverPort') || '8001');
+  const [autoReconnect, setAutoReconnect] = useState(() => getCookie('autoReconnect') !== 'false');
 
   const theme = isDarkMode ? darkTheme : lightTheme;
   const navigate = useNavigate();
-  const api = useAPI();
 
   const recognitionRef = useRef(null);
 
   useEffect(() => {
-    initializeApp();
-  }, []);
+    setCookie('serverIP', serverIP);
+    setCookie('serverPort', serverPort);
+  }, [serverIP, serverPort]);
 
   useEffect(() => {
     setCookie('language', language);
     setCookie('voiceState', voiceState);
   }, [language, voiceState]);
+
+  const updateServerSettings = useCallback((newIP, newPort) => {
+    setServerIP(newIP);
+    setServerPort(newPort);
+  }, []);
+
+  const toggleAutoReconnect = useCallback(() => {
+    setAutoReconnect(prev => {
+      const newValue = !prev;
+      setCookie('autoReconnect', newValue);
+      return newValue;
+    });
+  }, []);
+
+  // API methods
+  const createApiMethod = useCallback((endpoint, method) => async (data = null) => {
+    try {
+      const response = await axios[method](`http://${serverIP}:${serverPort}/api/${endpoint}`, data);
+      if (response.data.status !== 'success') {
+        throw new Error(response.data.message || `Failed to ${endpoint}`);
+      }
+      return response.data;
+    } catch (err) {
+      console.error(`Error in API method ${endpoint}:`, err);
+      throw err;
+    }
+  }, [serverIP, serverPort]);
+
+  const api = useMemo(() => ({
+    initializeAIState: createApiMethod('initialize', 'get'),
+    newConversation: createApiMethod('new_conversation', 'post'),
+    selectConversation: createApiMethod('select_conversation', 'post'),
+    setPath: createApiMethod('set_path', 'post'),
+    listItems: createApiMethod('list_items', 'post'),
+    executeBlock: createApiMethod('execute_block', 'post'),
+    toggleAutoExecute: createApiMethod('toggle_auto_execute', 'post'),
+  }), [createApiMethod]);
 
   const initializeApp = useCallback(async () => {
     try {
@@ -71,9 +111,12 @@ export const AppProvider = ({ children }) => {
           });
           navigate(`/chat/${data.conversation_id}`);
         }
+      } else {
+         throw new Error('Initialization failed: ' + (data.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error at initialization:', error);
+      throw new Error('Initialization failed: ' + (error));
     }
   }, [api, navigate]);
 
@@ -264,11 +307,16 @@ export const AppProvider = ({ children }) => {
         }
       };
       recognition.onstart = () =>  { setIsRecognizing(true) };
-      recognition.onend = () => { setIsRecognizing(false) };
+      recognition.onend = () => { if (voiceState === VoiceState.INACTIVE) setIsRecognizing(false) };
     
       recognition.onerror = (event) => {
-        console.error('Speech recognition error', event.error);
-        setIsRecognizing(false)
+        if (event.error === 'no-speech') {
+          // This is not an error, just log it if needed
+          console.log('No speech detected, continuing to listen...');
+        } else {
+          console.error('Speech recognition error', event.error);
+          setIsRecognizing(false);
+        }
       };
 
       recognitionRef.current = recognition;
@@ -336,6 +384,13 @@ export const AppProvider = ({ children }) => {
     setVoiceState,
     toggleVoiceActivation,
     toggleSTTListening,
+    serverIP,
+    serverPort,
+    updateServerSettings,
+    api,
+    initializeApp,
+    autoReconnect,
+    toggleAutoReconnect,
   }), [
     theme,
     isDarkMode,
@@ -364,6 +419,13 @@ export const AppProvider = ({ children }) => {
     setVoiceState,
     toggleVoiceActivation,
     toggleSTTListening,
+    serverIP,
+    serverPort,
+    updateServerSettings,
+    api,
+    initializeApp,
+    autoReconnect,
+    toggleAutoReconnect,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

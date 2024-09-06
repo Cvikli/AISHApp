@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Button } from './SharedStyles';
-import { useAPI } from '../API';
+import { useAppContext } from '../contexts/AppContext';
 
 const ModalBackground = styled.div`
   position: fixed;
@@ -90,7 +90,7 @@ const CurrentPath = styled.div`
 const FolderStructureModal = ({ isOpen, onClose, theme, projectPath, setProjectPath }) => {
   const [currentPath, setCurrentPath] = useState('');
   const [items, setItems] = useState([]);
-  const api = useAPI();
+  const { api } = useAppContext();
 
   useEffect(() => {
     if (isOpen) {
