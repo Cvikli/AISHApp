@@ -28,6 +28,7 @@ const UserPrompt = styled.span`
 const MessageContent = styled.div`
   margin: 0px;
   padding: 0;
+  white-space: pre-wrap;  
 
   p {
     margin: 0px;
@@ -46,6 +47,8 @@ const MessageContent = styled.div`
 
   li > p {
     display: inline;
+    margin: 0;
+    padding: 0;
   }
 
   & code {
@@ -96,6 +99,30 @@ const ExecuteButton = styled(Button)`
   bottom: 5px;
   right: 5px;
   padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 80px;
+  background-color: ${props => props.theme.backgroundColor};
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+`;
+
+const LoadingSpinner = styled.div`
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #3498db;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+  margin-right: 5px;
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
 `;
 
 const ExecuteCount = styled.span`
@@ -137,6 +164,7 @@ function Message({ message, theme }) {
   const { executeBlock, updateMessage } = useAppContext();
   const [ executeCounts, setExecuteCounts ] = useState({});
   const [ localContent, setLocalContent ] = useState(message.content);
+  const [ loadingStates, setLoadingStates ] = useState({});
 
   useEffect(() => {
     setLocalContent(message.content);
@@ -144,14 +172,21 @@ function Message({ message, theme }) {
 
   const handleExecute = useCallback(async (code, index) => {
     console.log('Executing code:', code, message.timestamp);
-    const response = await executeBlock(code, new Date(message.timestamp).toISOString());
-    setExecuteCounts(prevCounts => ({
-      ...prevCounts,
-      [index]: (prevCounts[index] || 0) + 1
-    }));
+    setLoadingStates(prevStates => ({ ...prevStates, [index]: true }));
+    try {
+      const response = await executeBlock(code, new Date(message.timestamp).toISOString());
+      setExecuteCounts(prevCounts => ({
+        ...prevCounts,
+        [index]: (prevCounts[index] || 0) + 1
+      }));
 
-    updateMessage(message.conversationId, message.content, { content: response.updated_content });
-    setLocalContent(response.updated_content);
+      updateMessage(message.conversationId, message.content, { content: response.updated_content });
+      setLocalContent(response.updated_content);
+    } catch (error) {
+      console.error('Error executing block:', error);
+    } finally {
+      setLoadingStates(prevStates => ({ ...prevStates, [index]: false }));
+    }
   }, [executeBlock, updateMessage, message]);
 
   if (!message || !localContent) {
@@ -173,13 +208,26 @@ function Message({ message, theme }) {
         if (isExecutableBlock) {
           const codeString = String(children);
           const codeIndex = JSON.stringify(codeString);
+          const isLoading = loadingStates[codeIndex];
 
           return (
               <CodeBlock theme={theme}>
                 <CodeContent theme={theme}>{children}</CodeContent>
-                <ExecuteButton onClick={() => handleExecute(codeString, codeIndex)}>
-                  EXECUTE
-                  <ExecuteCount>{executeCounts[codeIndex] > 0 ? `(${executeCounts[codeIndex]})` : ''}</ExecuteCount>
+                <ExecuteButton 
+                  onClick={() => handleExecute(codeString, codeIndex)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <LoadingSpinner />
+                      LOADING
+                    </>
+                  ) : (
+                    <>
+                      EXECUTE
+                      <ExecuteCount>{executeCounts[codeIndex] > 0 ? `(${executeCounts[codeIndex]})` : ''}</ExecuteCount>
+                    </>
+                  )}
                 </ExecuteButton>
               </CodeBlock>
           );
