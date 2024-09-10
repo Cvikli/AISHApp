@@ -31,7 +31,7 @@ export const AppProvider = ({ children }) => {
   const [conversations, setConversations] = useState({});
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isCollapsed, setIsCollapsed] = useState(true);
-  const [projectPath, setProjectPath] = useState("");
+  const [projectPath, setProjectPath] = useState(() => getCookie('projectPath') || "");
   const [isNoAutoExecute, setIsNoAutoExecute] = useState(true);
   const [model, setModel] = useState("");
   const [isRecognizing, setIsRecognizing] = useState(false);
@@ -74,6 +74,8 @@ export const AppProvider = ({ children }) => {
   // API methods
   const createApiMethod = useCallback((endpoint, method) => async (data = null) => {
     try {
+      console.log('http://${'+serverIP+'}:${'+serverPort+'}/api/${'+endpoint+'}')
+      console.log('Data:', data);
       const response = await axios[method](`http://${serverIP}:${serverPort}/api/${endpoint}`, data);
       if (response.data.status !== 'success') {
         throw new Error(response.data.message || `Failed to ${endpoint}`);

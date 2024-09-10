@@ -112,19 +112,21 @@ function ChatPage() {
       setIsLoading(false);
       setRetryCount(prev => prev + 1);
     }
-  }, [initializeApp]);
+  }, []);
 
   useEffect(() => {
-    attemptConnection();
-    let intervalId;
-    if (autoReconnect) {
-      intervalId = setInterval(() => {
-        if (!isServerConnected) {
-          attemptConnection();
-        }
-      }, RETRY_INTERVAL);
+    if (!isServerConnected) {
+      attemptConnection();
+      let intervalId;
+      if (autoReconnect) {
+        intervalId = setInterval(() => {
+          if (!isServerConnected) {
+            attemptConnection();
+          }
+        }, RETRY_INTERVAL);
+      }
+      return () => clearInterval(intervalId);
     }
-    return () => clearInterval(intervalId);
   }, [attemptConnection, isServerConnected, autoReconnect]);
 
   useEffect(() => {

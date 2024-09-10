@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Button } from './SharedStyles';
 import FolderStructureModal from './FolderStructureModal';
 import { useAppContext } from '../contexts/AppContext';
 import { useParams } from 'react-router-dom';
 import VoiceActivationButton from './VoiceActivationButton';
+
+import MoonIcon from '../assets/MoonIcon';
+import SunIcon from '../assets/SunIcon';
+import AutoExecuteIcon from '../assets/AutoExecuteIcon';
+import PauseIcon from '../assets/PauseIcon';
+
 
 export const HEADER_HEIGHT = 48;
 
@@ -80,7 +86,6 @@ const ThemeToggle = styled.button`
 const AutoExecuteToggle = styled.button`
   background: none;
   border: none;
-  font-size: 28px;
   cursor: pointer;
   padding: 5px 10px;
   display: flex;
@@ -145,6 +150,7 @@ const NewConversationButton = styled(Button)`
   cursor: pointer;
   color: ${props => props.theme.textColor};
   transition: background-color 0.2s ease;
+  font-family: 'Courier New', monospace;  // Added this line
 
   &:hover {
     background-color: ${props => props.theme.hoverColor};
@@ -186,6 +192,8 @@ function Header() {
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
+
+
 
   const openModal = () => {
     setIsModalOpen(true);
@@ -245,10 +253,10 @@ function Header() {
           <option value="zh">Chinese</option>
         </LanguageSelect>
         <AutoExecuteToggle onClick={handleToggleAutoExecute} theme={theme} title={isNoAutoExecute ? "Pause auto-execute" : "Start auto-execute"}>
-          {isNoAutoExecute ? '⏸️' : '▶️'}
+        {isNoAutoExecute ? <AutoExecuteIcon color={theme.textColor} /> : <PauseIcon color={theme.textColor} />}
         </AutoExecuteToggle>
         <ThemeToggle onClick={toggleTheme} theme={theme}>
-          {isDarkMode ? '☀️' : '🌙'}
+          {isDarkMode ? <SunIcon color={theme.textColor} /> : <MoonIcon color={theme.textColor} />}
         </ThemeToggle>
       </ButtonGroup>
       <FolderStructureModal

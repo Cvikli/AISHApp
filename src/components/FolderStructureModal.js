@@ -88,9 +88,9 @@ const CurrentPath = styled.div`
 `;
 
 const FolderStructureModal = ({ isOpen, onClose, theme, projectPath, setProjectPath }) => {
-  const [currentPath, setCurrentPath] = useState('');
   const [items, setItems] = useState([]);
-  const { api } = useAppContext();
+  const [currentPath, setCurrentPath] = useState(projectPath);
+  const { api, updateProjectPath } = useAppContext();
 
   useEffect(() => {
     if (isOpen) {
@@ -116,9 +116,12 @@ const FolderStructureModal = ({ isOpen, onClose, theme, projectPath, setProjectP
 
   const handleItemClick = async (item) => {
     if (item.isFolder) {
-      const newPath = item.isParent
-        ? currentPath.split('/').slice(0, -1).join('/')
-        : `${currentPath}/${item.name}`;
+      let newPath;
+      if (item.isParent) {
+        newPath = currentPath.split('/').slice(0, -1).join('/');
+      } else {
+        newPath = currentPath ? `${currentPath}/${item.name}` : item.name;
+      }
       fetchFolderStructure(newPath);
     }
   };

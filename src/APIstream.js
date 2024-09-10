@@ -43,6 +43,13 @@ export const streamProcessMessage = async (message, onMessage, user_meta, onDone
               case 'done':
                 onDone(parsedData.content, ai_meta);
                 break;
+              case 'start':
+              case 'ping':
+                break;
+              default:
+                console.log("unhandled!!")
+                console.log(event)
+                console.log(parsedData)
             }
           } catch (error) {
             console.warn('Error parsing JSON:', error);
