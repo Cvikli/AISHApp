@@ -99,14 +99,22 @@ export const AppProvider = ({ children }) => {
 
   const initializeApp = useCallback(async () => {
     try {
+      const cookieProjectPath = getCookie('projectPath');
       const data = await api.initializeAIState();
       if (data.status === 'success') {
+        console.log("data.available_conversations", data.available_conversations)
         setConversations(data.available_conversations);
         setIsNoAutoExecute(data.skip_code_execution);
         setModel(data.model || "");
-        setProjectPath(data.project_path || "");
+        
+
 
         if (data.conversation_id && data.available_conversations[data.conversation_id]) {
+          if (cookieProjectPath) {
+            await updateProjectPath(data.conversation_id, cookieProjectPath);
+          } else {
+            setProjectPath(data.project_path || "");
+          }
           updateConversation(data.conversation_id, {
             messages: [],
             systemPrompt: data.system_prompt?.content
@@ -182,14 +190,16 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const updateProjectPath = useCallback(async (conversationId, newPath) => {
+    console.log("newPath",newPath)
     const response = await api.setPath({ path: newPath });
     if (response?.status === 'success') {
       setProjectPath(newPath);
+      setCookie('projectPath', newPath);
       if (response.system_prompt) {
         updateConversation(conversationId, { systemPrompt: response.system_prompt.content });
       }
     }
-  }, [api, updateConversation]);
+  }, []);
 
   const updateMessage = useCallback((conversationId, messageContent, updates) => {
     setConversations(prev => {
@@ -278,7 +288,11 @@ export const AppProvider = ({ children }) => {
       recognition.lang = LANGUAGE_CODES[language] || 'en-US';
 
       recognition.onresult = (event) => {
-        if (voiceState === VoiceState.INACTIVE) return;
+        console.log('Speech recognition result received:', event);
+        if (voiceState === VoiceState.INACTIVE) {
+          console.log('VoiceState is INACTIVE, ignoring result');
+          return;
+        }
         let interimTranscript = '';
         let finalTranscriptPart = '';
 
@@ -304,6 +318,8 @@ export const AppProvider = ({ children }) => {
         } else if (voiceState === VoiceState.WAKE_WORD_LISTENING){
           setFinalTranscript('');
         } else if (voiceState === VoiceState.COMMAND_LISTENING || voiceState === VoiceState.VOICE_ACTIVATED_COMMAND_LISTENING) {
+          console.log('Updating transcripts in COMMAND_LISTENING or VOICE_ACTIVATED_COMMAND_LISTENING state');
+
           setFinalTranscript(prev => prev + finalTranscriptPart);
           setInterimTranscript(interimTranscript);
         }
@@ -338,23 +354,23 @@ export const AppProvider = ({ children }) => {
   }, [initializeSpeechRecognition]);
 
   useEffect(() => {
-      if (voiceState === VoiceState.INACTIVE) {
-        if (recognitionRef.current) {
-          recognitionRef.current.stop();
-          console.log('Stopped speech recognition');
-        }
-      } else {
-        if (!isRecognizing) {
-          if (recognitionRef.current) {
-            recognitionRef.current.start()
-            console.log('Started speech recognition');
-          } else {
-            console.log('The speech recognition is still not ready!');
-          };
-        } else {
-          console.log('Speech recognition is already running');
-        }
+    if (voiceState === VoiceState.INACTIVE) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        console.log('Stopped speech recognition');
       }
+    } else {
+      if (!isRecognizing && recognitionRef.current) {
+        recognitionRef.current.start();
+        console.log('Started speech recognition');
+      } else if (!recognitionRef.current) {
+        console.log('The speech recognition is not initialized');
+        initializeSpeechRecognition();
+      } else {
+        console.log(recognitionRef.currents)
+        console.log('Speech recognition is already running');
+      }
+    }
   }, [voiceState, isRecognizing]);
 
 
