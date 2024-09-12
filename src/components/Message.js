@@ -126,7 +126,7 @@ const formatMetaInfo = (msg) => {
   return parts.length > 0 ? `[${parts.join(', ')}]` : '';
 };
 
-const Message = React.memo(({ message, theme, isStreaming = false }) => {
+const Message = memo(({ message, theme, isStreaming = false }) => {
   const { executeBlock, updateMessage } = useAppContext();
   const [executeCounts, setExecuteCounts] = useState({});
   const [loadingStates, setLoadingStates] = useState({});
@@ -194,7 +194,7 @@ const Message = React.memo(({ message, theme, isStreaming = false }) => {
               options={{ scrollBeyondLastLine: false }}
               onScroll={(scrollTop) => {
                 // Handle scroll event if needed
-                console.log('Editor scrolled:', scrollTop);
+                // console.log('Editor scrolled:', scrollTop);
               }}
             />
             {isExecutable && !isStreaming && (
