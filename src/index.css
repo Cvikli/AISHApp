@@ -1,7 +1,7 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Courier New', monospace;
+  font-family: 'Consolas', 'Menlo', 'Monaco', 'Courier New', monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-size: 20px;
@@ -18,8 +18,7 @@ html, body, #root {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: 'Consolas', 'Menlo', 'Monaco', 'Courier New', monospace;
 }
 
 /* Text selection color */
@@ -38,6 +37,7 @@ code {
 input, textarea, button, select {
   border-radius: 0;
   font-size: 20px;
+  font-family: 'Consolas', 'Menlo', 'Monaco', 'Courier New', monospace;
 }
 
 /* Remove default outline and add a custom focus style */

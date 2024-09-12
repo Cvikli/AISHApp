@@ -37,12 +37,12 @@ const StyledButton = styled.button`
     animation: ${pulse} 1s infinite ease-in-out;
   `}
 `;
-
+  
 const InnerCircle = styled.div`
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background-color: ${props => props.$isActive ? '#ffffff' : props.theme.textColor};
+  background-color: ${props => props.$isActive ? '#ffffff' : props.theme.styleColor};
   transition: all 0.3s ease;
 `;
 

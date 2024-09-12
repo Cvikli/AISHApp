@@ -1,14 +1,13 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo, useLayoutEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useParams } from 'react-router-dom';
 import { ScrollableDiv, Button } from './SharedStyles';
-import { MAX_TEXTAREA_HEIGHT } from '../constants';
 import { useAppContext } from '../contexts/AppContext';
 import Message from './Message';
 import SystemPrompt from './SystemPrompt';
 import { streamProcessMessage } from '../APIstream';
-import STTButton from './STTButton';
-
+import ChatInput from './ChatInput';
+import { v4 as uuidv4 } from 'uuid';
 
 const JumpToBottomButton = styled(Button)`
   position: fixed;
@@ -52,7 +51,6 @@ const ChatContainer = styled.div`
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  font-family: 'Courier New', monospace;
   background-color: ${props => props.theme.backgroundColor};
   color: ${props => props.theme.textColor};
 `;
@@ -68,94 +66,11 @@ const BottomPadding = styled.div`
   transition: height 0.3s ease;
 `;
 
-const glowAnimation = keyframes`
-  0% { box-shadow: 0 0 5px 0px rgba(0, 255, 0, 0.5); }
-  50% { box-shadow: 0 0 20px 10px rgba(0, 255, 0, 0.3); }
-  100% { box-shadow: 0 0 5px 0px rgba(0, 255, 0, 0.5); }
-`;
-
-const InputContainer = styled.div`
-  display: flex;
-  padding: 0px;
-  background-color: ${props => props.theme.backgroundColor};
-  border-left: 10px solid ${props => props.theme.textColor};
-  border-top: 1px solid ${props => props.theme.textColor};
-  animation: ${props => props.$isListening ? glowAnimation : 'none'} 2s infinite;
-  transition: box-shadow 0.3s ease-in-out;
-`;
-
-const InputWrapper = styled.div`
-  display: flex;
-  flex-grow: 1;
-  align-items: flex-start;
-  background-color: ${props => props.theme.backgroundColor};
-`;
-
-const Prompt = styled.span`
-  color: ${props => props.theme.textColor};
-  padding: 5px 2px 0 5px;
-`;
-
-const TextArea = styled.textarea`
-  flex-grow: 1;
-  padding: 5px;
-  border: none;
-  resize: none;
-  min-height: 20px;
-  height: 24px;
-  font-size: 20px;
-  max-height: ${MAX_TEXTAREA_HEIGHT}px;
-  overflow-y: auto;
-  font-family: inherit;
-  line-height: 1.2;  
-  background-color: transparent;
-  color: white;
-
-  &:focus {
-    outline: none;
-    box-shadow: inset 0 0 0 0px #0f0;
-  }
-`;
-
-
-const SendButton = styled(Button)`
-  margin-left: 2px;
-  height: auto;
-  min-height: 20px;
-  align-self: stretch;
-  display: flex;
-  align-items: center;
-`;
-
-const StyledSTTButton = styled(STTButton)`
-  align-self: stretch;
-  height: auto !important;
-  min-height: 20px !important;
-
-  & > div {
-    height: 100% !important;
-    min-height: 34px !important;
-  }
-`;
-
-const CLOSING_PHRASES = {
-  en: ['i finished', "let's do it", 'send it', 'that is all', 'answer please'],
-  hu: ['befejeztem', 'küldd el', 'ennyi volt', 'válaszolj kérlek'],
-  de: ['ich bin fertig', 'lass uns das machen', 'sende es', 'das ist alles'],
-  fr: ["j'ai fini", 'faisons-le', 'envoie-le', "c'est tout"],
-  es: ['he terminado', 'hagámoslo', 'envíalo', 'eso es todo'],
-  it: ['ho finito', 'facciamolo', 'invialo', 'questo è tutto'],
-  ja: ['終わりました', 'やりましょう', '送信して', '以上です'],
-  ko: ['끝났어요', '시작하자', '보내', '이게 다야'],
-  zh: ['我完成了', '让我们开始吧', '发送', '就这样'],
-};
-
-function ChatComponent() {
+const ChatComponent = () => {
   const {
     theme,
     conversations,
     addMessage,
-    updateMessage,
     projectPath,
     setFinalTranscript,
     voiceState,
@@ -168,16 +83,13 @@ function ChatComponent() {
 
   const { conversationId } = useParams();
 
-  const [inputValue, setInputValue] = useState('');
   const [isReceivingMessage, setIsReceivingMessage] = useState(false);
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
-  const [streamedContent, setStreamedContent] = useState('');
-  const [isSTTActive, setIsSTTActive] = useState(false);
-
+  const [tempUserMessage, setTempUserMessage] = useState(null);
+  const [tempAIMessage, setTempAIMessage] = useState(null);
 
   const messageEndRef = useRef(null);
   const messageHistoryRef = useRef(null);
-  const textAreaRef = useRef(null);
 
   const [isNearBottom, setIsNearBottom] = useState(true);
 
@@ -195,6 +107,7 @@ function ChatComponent() {
     return true;
   }, []);
 
+
   useEffect(() => {
     const messageHistory = messageHistoryRef.current;
     if (messageHistory) {
@@ -204,104 +117,86 @@ function ChatComponent() {
     }
   }, [checkIfNearBottom]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (messageEndRef.current && !isSystemPromptOpen && checkIfNearBottom()) {
       messageEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
-  }, [messages, isSystemPromptOpen, streamedContent]);
+  });
 
-  useEffect(() => {
-    if (textAreaRef.current) {
-      textAreaRef.current.style.height = 'auto';
-      textAreaRef.current.style.height = `${Math.max(textAreaRef.current.scrollHeight, 20)}px`;
+  const scrollToBottom = useCallback(() => {
+    if (messageEndRef.current) {
+      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [inputValue]);
+  }, []);
 
-
-  const handleSend = async () => {
-    if (isSTTActive) {
-      toggleSTTListening();
-    }
-    const trimmedInput = inputValue.trim() + ' ' + interimTranscript;
-    
+  const handleSend = useCallback(async (trimmedInput) => {
+    console.log('ChatComponent: handleSend called');
     if (trimmedInput) {
-      const userMessage = { role: 'user', content: trimmedInput };
-      addMessage(conversationId, userMessage);
-  
+      const tempMessage = {
+        id: 'temp-user-message',
+        role: 'user',
+        content: trimmedInput
+      };
+      setTempUserMessage(tempMessage);
+
       setIsReceivingMessage(true);
-      setInputValue('');
-      setStreamedContent('');
-  
+      let stream_content = '';
       try {
         await streamProcessMessage(
           trimmedInput,
-          (content) => setStreamedContent(prev => prev + content),
-          (inMeta) => updateMessage(conversationId, trimmedInput, inMeta),
-          (finalContent, outMeta) => {
-            addMessage(conversationId, { role: 'assistant', content: finalContent, ...outMeta });
-            setStreamedContent('');
+          (content) => {
+            stream_content += content;
+            setTempAIMessage(prev => ({
+              ...prev,
+              content: (prev?.content || '') + content
+            }));
+          },
+          (inMeta) => {
+            addMessage(conversationId, {
+              role: 'user',
+              content: trimmedInput,
+              ...inMeta // timestamp, id and metas...
+            });
+            setTempUserMessage(null);
+            setTempAIMessage({
+              id: uuidv4(),
+              role: 'assistant',
+              content: '',
+              timestamp: new Date().toISOString()
+            });
+          },
+          (outMeta) => {
+            const assistantMessage = {
+              ...tempAIMessage,
+              content: stream_content,
+              ...outMeta
+            };
+            addMessage(conversationId, assistantMessage);
             setIsReceivingMessage(false);
+            setTempAIMessage(null);
+            stream_content = '';
           }
         );
       } catch (error) {
         console.error('Error:', error);
-        // Append error message to the streamed content
         const errorMessage = `\n\nError: ${error.message}`;
-        setStreamedContent(prev => prev + errorMessage);
-        
-        // Add the message with the streamed content and error
-        addMessage(conversationId, { 
-          role: 'assistant', 
-          content: streamedContent + errorMessage,
+
+        addMessage(conversationId, {
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: stream_content + errorMessage,
+          timestamp: new Date(),
           error: error.message
         });
-        
-        setStreamedContent('');
+
         setIsReceivingMessage(false);
+        setTempAIMessage(null);
+        stream_content = '';
+        setTempUserMessage(null);
       }
     }
-  };
+  }, [conversationId, addMessage]);
 
-  useEffect(() => {
-    if (voiceState === 'COMMAND_LISTENING' || voiceState === 'VOICE_ACTIVATED_COMMAND_LISTENING') {
-      const lowercaseTranscript = (inputValue + finalTranscript + ' ' + interimTranscript).toLowerCase();
-      const closingPhrases = CLOSING_PHRASES[language] || CLOSING_PHRASES['en'];
-      
-      if (closingPhrases.some(phrase => lowercaseTranscript.includes(phrase))) {
-        setInputValue(prevInput => prevInput + finalTranscript + ' ' + interimTranscript);
-        handleSend();
-        setVoiceState(voiceState === 'COMMAND_LISTENING' ? 'INACTIVE' : 'WAKE_WORD_LISTENING');
-      }
-      if (finalTranscript) {
-        setInputValue(prev => prev + finalTranscript);
-        setFinalTranscript('');
-      }
-    } else {
-      if (finalTranscript) {
-        setInputValue(prev => prev + finalTranscript);
-        setFinalTranscript('');
-      }
-    }
-  }, [finalTranscript, interimTranscript]);
-
-
-  const handleInputChange = (e) => {
-    setInputValue(e.target.value);
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      setInputValue(inputValue + finalTranscript + ' ' + interimTranscript);
-      handleSend();
-    }
-  };  
-  
-  const scrollToBottom = () => {
-    if (messageEndRef.current) {
-      messageEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  };
 
 
   return (
@@ -312,20 +207,26 @@ function ChatComponent() {
           setIsOpen={setIsSystemPromptOpen}
           conversationId={conversationId}
         />
-        {messages.map((message, index) => (
+        {messages.map((message) => (
           <Message
-            key={`${message.role}-${index}`}
+            key={message.id}
             message={message}
+            isStreaming={false}
             theme={theme}
           />
         ))}
-        {isReceivingMessage && (
-          <Message
-            key="receiving-message"
-            message={{content: streamedContent || "AI is typing..."}}
-            theme={theme}
-          />
-        )}
+        {tempUserMessage && <Message
+          key="temp-user-message"
+          message={tempUserMessage}
+          isStreaming={false}
+          theme={theme}
+        />}
+        {tempAIMessage && <Message
+          key="temp-ai-message"
+          message={tempAIMessage}
+          isStreaming={true}
+          theme={theme}
+        />}
         <BottomPadding 
           ref={messageEndRef} 
           data-is-receiving={isReceivingMessage}
@@ -339,26 +240,21 @@ function ChatComponent() {
       >
         <ArrowDownIcon />
       </JumpToBottomButton>
-      <InputContainer theme={theme} $isListening={isSTTActive}>
-        <InputWrapper theme={theme}>
-          <Prompt theme={theme}>$</Prompt>
-          <TextArea 
-            ref={textAreaRef}
-            value={inputValue + interimTranscript}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            placeholder={`Enter command... ${projectPath ? `(Project: ${projectPath})` : ''}`}
-            rows={1}
-            theme={theme}
-          />
-        </InputWrapper>
-        <StyledSTTButton 
-          onActiveChange={setIsSTTActive}
-        />
-        <SendButton onClick={handleSend} theme={theme}>Send</SendButton>
-      </InputContainer>
+      <ChatInput
+        theme={theme}
+        projectPath={projectPath}
+        onSend={handleSend}
+        interimTranscript={interimTranscript}
+        finalTranscript={finalTranscript}
+        setFinalTranscript={setFinalTranscript}
+        voiceState={voiceState}
+        setVoiceState={setVoiceState}
+        toggleSTTListening={toggleSTTListening}
+        language={language}
+        // glowAnimation={glowAnimation}
+      />
     </ChatContainer>
   );
-}
+};
 
 export default ChatComponent;

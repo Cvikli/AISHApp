@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { Button } from './SharedStyles';
 import FolderStructureModal from './FolderStructureModal';
@@ -10,7 +10,6 @@ import MoonIcon from '../assets/MoonIcon';
 import SunIcon from '../assets/SunIcon';
 import AutoExecuteIcon from '../assets/AutoExecuteIcon';
 import PauseIcon from '../assets/PauseIcon';
-
 
 export const HEADER_HEIGHT = 48;
 
@@ -25,13 +24,14 @@ const HeaderContainer = styled.div`
 
 const CollapseButton = styled.button`
   background: none;
+  min-width: ${HEADER_HEIGHT}px;
   width: ${HEADER_HEIGHT}px;
   height: ${HEADER_HEIGHT}px;
   border: none;
   border-right: 1px solid ${props => props.theme.borderColor};
   font-size: 24px;
   cursor: pointer;
-  color: ${props => props.theme.textColor};
+  color: ${props => props.theme.styleColor};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -43,7 +43,7 @@ const CollapseButton = styled.button`
 `;
 
 const Title = styled.h1`
-  font-family: 'Press Start 2P', cursive;
+  // font-family: 'Press Start 2P', cursive;
   font-size: 28px;
   margin: 0 14px;
   padding-top: 5px;
@@ -51,6 +51,14 @@ const Title = styled.h1`
   display: flex;
   align-items: center;
   font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  @media (max-width: 768px) {
+    font-size: 20px;
+    margin: 0 8px;
+  }
 `;
 
 const ConversationId = styled.span`
@@ -95,7 +103,7 @@ const AutoExecuteToggle = styled.button`
 
 const ProjectPathContainer = styled.div`
   display: flex;
-  align-items: stretch; // Changed from center to stretch
+  align-items: stretch;
   margin-right: 10px;
   background-color: ${props => props.theme.inputBackground};
   border: 1px solid ${props => props.theme.borderColor};
@@ -112,7 +120,7 @@ const ProjectPathText = styled.span`
   padding: 0 5px;
   flex-grow: 1;
   display: flex;
-  align-items: center; // Center text vertically
+  align-items: center;
 `;
 
 const FolderButton = styled(Button)`
@@ -122,7 +130,17 @@ const FolderButton = styled(Button)`
   flex-shrink: 0;
   justify-content: center;
   font-size: 20px;
-  height: 100%; // Make it full height of the container
+  height: 100%;
+`;
+
+const ResetProjectButton = styled(Button)`
+  padding: 0 10px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  flex-shrink: 0;
+  justify-content: center;
+  font-size: 16px;
+  height: 100%;
 `;
 
 const LanguageSelect = styled.select`
@@ -135,6 +153,7 @@ const LanguageSelect = styled.select`
 `;
 
 const NewConversationButton = styled(Button)`
+  min-width: ${props => props.$isCollapsed ? HEADER_HEIGHT : 300}px;
   width: ${props => props.$isCollapsed ? HEADER_HEIGHT : 300}px;
   height: ${HEADER_HEIGHT}px;
   min-height: ${HEADER_HEIGHT}px;
@@ -148,9 +167,8 @@ const NewConversationButton = styled(Button)`
   border-bottom: 1px solid ${props => props.theme.borderColor};
   background-color: ${props => props.theme.backgroundColor};
   cursor: pointer;
-  color: ${props => props.theme.textColor};
+  color: ${props => props.theme.styleColor};
   transition: background-color 0.2s ease;
-  font-family: 'Courier New', monospace;  // Added this line
 
   &:hover {
     background-color: ${props => props.theme.hoverColor};
@@ -158,7 +176,7 @@ const NewConversationButton = styled(Button)`
 
   &:focus {
     outline: none;
-    box-shadow: inset 0 0 0 1px ${props => props.theme.textColor};
+    box-shadow: inset 0 0 0 1px ${props => props.theme.styleColor};
   }
 `;
 
@@ -193,8 +211,6 @@ function Header() {
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
-
-
   const openModal = () => {
     setIsModalOpen(true);
   };
@@ -206,6 +222,10 @@ function Header() {
   const handleSetProjectPath = async (newPath) => {
     await updateProjectPath(conversationId, newPath);
     closeModal();
+  };
+
+  const handleResetProject = async () => {
+    await updateProjectPath(conversationId, "");
   };
 
   const handleToggleAutoExecute = () => {
@@ -240,6 +260,9 @@ function Header() {
           <ProjectPathText theme={theme} title={projectPath}>
             {projectPath || 'No project selected'}
           </ProjectPathText>
+          <ResetProjectButton onClick={handleResetProject} theme={theme} title="Reset Project">
+            ✖️
+          </ResetProjectButton>
         </ProjectPathContainer>
         <LanguageSelect value={language} onChange={handleLanguageChange} theme={theme}>
           <option value="en">English</option>
@@ -253,10 +276,10 @@ function Header() {
           <option value="zh">Chinese</option>
         </LanguageSelect>
         <AutoExecuteToggle onClick={handleToggleAutoExecute} theme={theme} title={isNoAutoExecute ? "Pause auto-execute" : "Start auto-execute"}>
-        {isNoAutoExecute ? <AutoExecuteIcon color={theme.textColor} /> : <PauseIcon color={theme.textColor} />}
+        {isNoAutoExecute ? <AutoExecuteIcon color={theme.styleColor} /> : <PauseIcon color={theme.styleColor} />}
         </AutoExecuteToggle>
         <ThemeToggle onClick={toggleTheme} theme={theme}>
-          {isDarkMode ? <SunIcon color={theme.textColor} /> : <MoonIcon color={theme.textColor} />}
+          {isDarkMode ? <SunIcon color={theme.styleColor} /> : <MoonIcon color={theme.styleColor} />}
         </ThemeToggle>
       </ButtonGroup>
       <FolderStructureModal

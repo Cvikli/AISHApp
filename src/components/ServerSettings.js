@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import { useAppContext } from '../contexts/AppContext';
 
@@ -27,15 +27,18 @@ const ServerSettings = () => {
   const [tempIP, setTempIP] = useState(serverIP);
   const [tempPort, setTempPort] = useState(serverPort);
 
-  useEffect(() => {
-    const saveTimeout = setTimeout(() => {
-      if (tempIP !== serverIP || tempPort !== serverPort) {
-        updateServerSettings(tempIP, tempPort);
-      }
-    }, 1000);
+  const debouncedUpdateSettings = useCallback(
+    debounce((ip, port) => {
+      updateServerSettings(ip, port);
+    }, 1000),
+    [updateServerSettings]
+  );
 
-    return () => clearTimeout(saveTimeout);
-  }, [tempIP, tempPort, serverIP, serverPort, updateServerSettings]);
+  useEffect(() => {
+    if (tempIP !== serverIP || tempPort !== serverPort) {
+      debouncedUpdateSettings(tempIP, tempPort);
+    }
+  }, [tempIP, tempPort, serverIP, serverPort, debouncedUpdateSettings]);
 
   return (
     <SettingsContainer theme={theme}>
@@ -57,5 +60,18 @@ const ServerSettings = () => {
     </SettingsContainer>
   );
 };
+
+// Debounce function
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
 
 export default ServerSettings;

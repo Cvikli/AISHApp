@@ -9,7 +9,6 @@ export const Button = styled.button`
   border-radius: 0px;
   cursor: pointer;
   transition: background-color 0.2s;
-  font-family: 'Courier New', monospace;  // Added this line
 
   &:hover {
     background-color: #187bcd;

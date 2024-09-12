@@ -3,27 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { lightTheme, darkTheme } from '../theme';
 import { setCookie, getCookie } from '../cookies';
+import { LANGUAGE_CODES, VoiceState } from '../constants'; 
 
 const AppContext = createContext();
-
-const VoiceState = {
-  INACTIVE: 'INACTIVE',
-  WAKE_WORD_LISTENING: 'WAKE_WORD_LISTENING',
-  COMMAND_LISTENING: 'COMMAND_LISTENING',
-  VOICE_ACTIVATED_COMMAND_LISTENING: 'VOICE_ACTIVATED_COMMAND_LISTENING',
-};
-
-const LANGUAGE_CODES = {
-  en: 'en-US',
-  hu: 'hu-HU',
-  de: 'de-DE',
-  fr: 'fr-FR',
-  es: 'es-ES',
-  it: 'it-IT',
-  ja: 'ja-JP',
-  ko: 'ko-KR',
-  zh: 'zh-CN',
-};
 
 export const AppProvider = ({ children }) => {
   const [availableMicrophones, setAvailableMicrophones] = useState([]);
@@ -42,6 +24,7 @@ export const AppProvider = ({ children }) => {
   const [serverIP, setServerIP] = useState(() => getCookie('serverIP') || 'localhost');
   const [serverPort, setServerPort] = useState(() => getCookie('serverPort') || '8001');
   const [autoReconnect, setAutoReconnect] = useState(() => getCookie('autoReconnect') !== 'false');
+  const [isResponsePending, setIsResponsePending] = useState(false);
 
   const theme = isDarkMode ? darkTheme : lightTheme;
   const navigate = useNavigate();
@@ -74,7 +57,7 @@ export const AppProvider = ({ children }) => {
   // API methods
   const createApiMethod = useCallback((endpoint, method) => async (data = null) => {
     try {
-      console.log('http://${'+serverIP+'}:${'+serverPort+'}/api/${'+endpoint+'}')
+      console.log(`http://${serverIP}:${serverPort}/api/${endpoint}`);
       console.log('Data:', data);
       const response = await axios[method](`http://${serverIP}:${serverPort}/api/${endpoint}`, data);
       if (response.data.status !== 'success') {
@@ -102,12 +85,10 @@ export const AppProvider = ({ children }) => {
       const cookieProjectPath = getCookie('projectPath');
       const data = await api.initializeAIState();
       if (data.status === 'success') {
-        console.log("data.available_conversations", data.available_conversations)
+        console.log("data.available_conversations", data.available_conversations);
         setConversations(data.available_conversations);
         setIsNoAutoExecute(data.skip_code_execution);
         setModel(data.model || "");
-        
-
 
         if (data.conversation_id && data.available_conversations[data.conversation_id]) {
           if (cookieProjectPath) {
@@ -122,7 +103,7 @@ export const AppProvider = ({ children }) => {
           navigate(`/chat/${data.conversation_id}`);
         }
       } else {
-         throw new Error('Initialization failed: ' + (data.message || 'Unknown error'));
+        throw new Error('Initialization failed: ' + (data.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error at initialization:', error);
@@ -137,7 +118,20 @@ export const AppProvider = ({ children }) => {
     }));
   }, []);
 
+  const removeEmptyConversation = useCallback((excludeId = null) => {
+    const emptyConversation = Object.values(conversations).find(
+      conv => conv.messages.length === 0 && conv.id !== excludeId
+    );
+    if (emptyConversation) {
+      setConversations(prev => {
+        const { [emptyConversation.id]: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [conversations]);
+
   const selectConversation = useCallback(async (id) => {
+    removeEmptyConversation(id);
     const response = await api.selectConversation({ conversation_id: id });
     if (response?.status === 'success') {
       updateConversation(id, {
@@ -146,18 +140,10 @@ export const AppProvider = ({ children }) => {
       });
       navigate(`/chat/${id}`);
     }
-  }, [api, navigate, updateConversation]);
+  }, [api, navigate, updateConversation, removeEmptyConversation]);
 
   const newConversation = useCallback(async () => {
-    const emptyConversation = Object.values(conversations).find(
-      conv => conv.sentence === "New" || conv.sentence === ""
-    );
-    if (emptyConversation) {
-        setConversations(prev => {
-          const { [emptyConversation.id]: _, ...rest } = prev;
-          return rest;
-        });
-    }
+    removeEmptyConversation();
     const response = await api.newConversation();
     if (response?.status === 'success' && response.conversation?.id) {
       updateConversation(response.conversation.id, {
@@ -170,27 +156,10 @@ export const AppProvider = ({ children }) => {
       }
       navigate(`/chat/${response.conversation.id}`);
     }
-      
-  }, [api, navigate, conversations, updateConversation]);
-
-  const addMessage = useCallback((conversationId, newMessage) => {
-    setConversations(prev => {
-      const conversation = prev[conversationId];
-      if (!conversation) return prev;
-      console.log("conversation", conversation)
-      return {
-        ...prev,
-        [conversationId]: {
-          ...conversation,
-          messages: [...conversation.messages, newMessage],
-          sentence: newMessage.role === 'user' ? newMessage.content.substring(0, 30) + '...' : conversation.sentence
-        }
-      };
-    });
-  }, []);
+  }, [api, navigate, updateConversation, removeEmptyConversation]);
 
   const updateProjectPath = useCallback(async (conversationId, newPath) => {
-    console.log("newPath",newPath)
+    console.log("newPath", newPath);
     const response = await api.setPath({ path: newPath });
     if (response?.status === 'success') {
       setProjectPath(newPath);
@@ -201,17 +170,54 @@ export const AppProvider = ({ children }) => {
     }
   }, []);
 
-  const updateMessage = useCallback((conversationId, messageContent, updates) => {
-    setConversations(prev => {
-      const conversation = prev[conversationId];
-      if (!conversation) return prev;
+  const addMessage = useCallback((conversationId, message) => {
+    setConversations(prevConversations => {
+      if (!prevConversations[conversationId]) {
+        console.warn(`Conversation ${conversationId} not found. Creating a new conversation.`);
+        return {
+          ...prevConversations,
+          [conversationId]: {
+            id: conversationId,
+            messages: [message],
+            systemPrompt: ''
+          }
+        };
+      }
       return {
-        ...prev,
+        ...prevConversations,
+        [conversationId]: {
+          ...prevConversations[conversationId],
+          messages: [...(prevConversations[conversationId].messages || []), message]
+        }
+      };
+    });
+  }, []);
+
+  const delMessage = useCallback((conversationId, messageId) => {
+    setConversations(prevConversations => {
+      const updatedConversation = { ...prevConversations[conversationId] };
+      updatedConversation.messages = updatedConversation.messages.filter(message => message.id !== messageId);
+      return {
+        ...prevConversations,
+        [conversationId]: updatedConversation
+      };
+    });
+  }, []);
+
+  const updateMessage = useCallback((conversationId, messageId, updates) => {
+    setConversations(prevConversations => {
+      const conversation = prevConversations[conversationId];
+      if (!conversation) {
+        console.warn(`Conversation ${conversationId} not found.`);
+        return prevConversations;
+      }
+      return {
+        ...prevConversations,
         [conversationId]: {
           ...conversation,
-          messages: conversation.messages.map(msg =>
-            msg.content === messageContent ? { ...msg, ...updates } : msg
-          ),
+          messages: conversation.messages.map(msg => 
+            msg.id === messageId ? { ...msg, ...updates } : msg
+          )
         }
       };
     });
@@ -268,11 +274,11 @@ export const AppProvider = ({ children }) => {
         case VoiceState.INACTIVE: return VoiceState.COMMAND_LISTENING;
         case VoiceState.WAKE_WORD_LISTENING: return VoiceState.VOICE_ACTIVATED_COMMAND_LISTENING;
         case VoiceState.VOICE_ACTIVATED_COMMAND_LISTENING: 
-          setFinalTranscript(prev => prev + ' ' + interimTranscript)
+          setFinalTranscript(prev => prev + ' ' + interimTranscript);
           setInterimTranscript('');
           return VoiceState.WAKE_WORD_LISTENING;
         case VoiceState.COMMAND_LISTENING: 
-          setFinalTranscript(prev => prev +  ' ' + interimTranscript)  
+          setFinalTranscript(prev => prev +  ' ' + interimTranscript);  
           setInterimTranscript('');
           return VoiceState.INACTIVE;
         default: return VoiceState.INACTIVE;
@@ -315,21 +321,19 @@ export const AppProvider = ({ children }) => {
           setInterimTranscript('');
           interimTranscript = '';
           finalTranscriptPart = '';
-        } else if (voiceState === VoiceState.WAKE_WORD_LISTENING){
+        } else if (voiceState === VoiceState.WAKE_WORD_LISTENING) {
           setFinalTranscript('');
         } else if (voiceState === VoiceState.COMMAND_LISTENING || voiceState === VoiceState.VOICE_ACTIVATED_COMMAND_LISTENING) {
           console.log('Updating transcripts in COMMAND_LISTENING or VOICE_ACTIVATED_COMMAND_LISTENING state');
-
           setFinalTranscript(prev => prev + finalTranscriptPart);
           setInterimTranscript(interimTranscript);
         }
       };
-      recognition.onstart = () =>  { setIsRecognizing(true) };
+      recognition.onstart = () => { setIsRecognizing(true) };
       recognition.onend = () => { if (voiceState === VoiceState.INACTIVE) setIsRecognizing(false) };
-    
+
       recognition.onerror = (event) => {
         if (event.error === 'no-speech') {
-          // This is not an error, just log it if needed
           console.log('No speech detected, continuing to listen...');
         } else {
           console.error('Speech recognition error', event.error);
@@ -367,12 +371,11 @@ export const AppProvider = ({ children }) => {
         console.log('The speech recognition is not initialized');
         initializeSpeechRecognition();
       } else {
-        console.log(recognitionRef.currents)
+        console.log(recognitionRef.current);
         console.log('Speech recognition is already running');
       }
     }
   }, [voiceState, isRecognizing]);
-
 
   const value = useMemo(() => ({
     theme,
@@ -386,6 +389,7 @@ export const AppProvider = ({ children }) => {
     newConversation,
     addMessage,
     updateMessage,
+    delMessage,
     updateProjectPath,
     executeBlock,
     isNoAutoExecute,
@@ -409,6 +413,8 @@ export const AppProvider = ({ children }) => {
     initializeApp,
     autoReconnect,
     toggleAutoReconnect,
+    isResponsePending,
+    setIsResponsePending,
   }), [
     theme,
     isDarkMode,
@@ -421,6 +427,7 @@ export const AppProvider = ({ children }) => {
     newConversation,
     addMessage,
     updateMessage,
+    delMessage,
     updateProjectPath,
     executeBlock,
     isNoAutoExecute,
@@ -444,6 +451,8 @@ export const AppProvider = ({ children }) => {
     initializeApp,
     autoReconnect,
     toggleAutoReconnect,
+    isResponsePending,
+    setIsResponsePending,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

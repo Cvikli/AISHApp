@@ -41,8 +41,13 @@ export const streamProcessMessage = async (message, onMessage, user_meta, onDone
                 ai_meta = parsedData;
                 break;
               case 'done':
-                onDone(parsedData.content, ai_meta);
+                onDone(ai_meta);
                 break;
+              case 'error':
+                onMessage('\n');
+                onMessage(parsedData.content);
+                onDone(ai_meta);
+                break
               case 'start':
               case 'ping':
                 break;
@@ -53,11 +58,8 @@ export const streamProcessMessage = async (message, onMessage, user_meta, onDone
             }
           } catch (error) {
             console.warn('Error parsing JSON:', error);
-            if (event === 'message') {
-              onMessage(data);
-            } else if (event === 'done') {
-              onDone(data);
-            }
+            onMessage(error);
+
           }
           buffer = '';
         }

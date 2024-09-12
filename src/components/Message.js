@@ -1,13 +1,12 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import styled from 'styled-components';
-import ReactMarkdown from 'react-markdown';
+import React, { useState, useCallback, useEffect, memo, useRef } from 'react';
+import styled, { keyframes } from 'styled-components';
 import { Button } from './SharedStyles';
 import { useAppContext } from '../contexts/AppContext';
+import MonacoEditor from './MonacoEditor';
 
 const MessageContainer = styled.div`
   margin: 8px 0;
-  padding: 5px 2px;
-  font-family: 'Courier New', monospace;
+  padding: 5px 10px;
   background-color: ${props => props.theme.backgroundColor};
   color: white;
   border-left: ${props => props.$isUser ? `10px solid ${props.theme.textColor}` : 'none'};
@@ -18,6 +17,10 @@ const UserMessageContainer = styled.div`
   align-items: flex-start;
 `;
 
+const EditorWrapper = styled.div`
+  margin: 10px 0;
+`;
+
 const UserPrompt = styled.span`
   color: ${props => props.theme.textColor};
   font-weight: bold;
@@ -25,35 +28,16 @@ const UserPrompt = styled.span`
   flex-shrink: 0;
 `;
 
-const MessageContent = styled.div`
-  margin: 0px;
+const UserTextarea = styled.div`
+  width: 100%;
+  min-height: 24px;
+  background-color: ${props => props.theme.backgroundColor};
+  color: white;
+  font-family: inherit;
+  font-size: inherit;
   padding: 0;
-  white-space: pre-wrap;  
-
-  p {
-    margin: 0px;
-    padding: 0;
-  }
-
-  ul, ol {
-    margin: 1px 0 1px 20px;
-    padding-left: 20px;
-  }
-
-  li {
-    margin: 4px 0 4px 20px;
-    padding-left: 20px;
-  }
-
-  li > p {
-    display: inline;
-    margin: 0;
-    padding: 0;
-  }
-
-  & code {
-    font-family: 'Courier New', monospace;
-  }
+  white-space: pre-wrap;
+  word-wrap: break-word;
 `;
 
 const Timestamp = styled.div`
@@ -68,36 +52,8 @@ const MetaInfo = styled.span`
   color: ${props => props.theme.textColor};
 `;
 
-const StyledMarkdown = styled(ReactMarkdown)`
-  margin: 0;
-  padding: 0;
-
-  code {
-    background-color: ${props => props.theme.backgroundColor};
-    border: 1px solid white;
-    border-radius: 4px;
-    padding: 1px;
-  }
-
-  pre {
-    background-color: ${props => props.theme.backgroundColor};
-    border-radius: 4px;
-    padding: 0px 10px;
-    overflow-x: auto;
-    position: relative;
-    margin: 0px 0;
-
-    code {
-      display: block;
-      padding: 8px;
-    }
-  }
-`;
-
 const ExecuteButton = styled(Button)`
-  position: absolute;
-  bottom: 5px;
-  right: 5px;
+  margin-top: 5px;
   padding: 4px 8px;
   display: flex;
   align-items: center;
@@ -130,15 +86,25 @@ const ExecuteCount = styled.span`
   color: ${props => props.theme.textColor};
 `;
 
-const CodeBlock = styled.div`
-  position: relative;
-  margin: 0px 0px 10px 0px;
-  overflow-x: auto;
+const blinkingCursor = keyframes`
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 `;
 
-const CodeContent = styled.code`
-  display: block;
-  color: ${props => props.theme.textColor};
+const BlinkingCursor = styled.span`
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  background-color: ${props => props.theme.textColor};
+  animation: ${blinkingCursor} 1s infinite;
+  vertical-align: middle;
 `;
 
 const formatTimestamp = (ts) => {
@@ -160,18 +126,18 @@ const formatMetaInfo = (msg) => {
   return parts.length > 0 ? `[${parts.join(', ')}]` : '';
 };
 
-function Message({ message, theme }) {
+const Message = React.memo(({ message, theme, isStreaming = false }) => {
   const { executeBlock, updateMessage } = useAppContext();
-  const [ executeCounts, setExecuteCounts ] = useState({});
-  const [ localContent, setLocalContent ] = useState(message.content);
-  const [ loadingStates, setLoadingStates ] = useState({});
+  const [executeCounts, setExecuteCounts] = useState({});
+  const [loadingStates, setLoadingStates] = useState({});
+  const editorRefs = useRef({});
+  const lastCodeBlockRef = useRef(null);
 
-  useEffect(() => {
-    setLocalContent(message.content);
-  }, [message.content]);
+  const updateMessageWrapper = useCallback((response) => {
+    updateMessage(message.conversationId, message.id, { content: response.updated_content });
+  }, [updateMessage, message.conversationId, message.id]);
 
   const handleExecute = useCallback(async (code, index) => {
-    console.log('Executing code:', code, message.timestamp);
     setLoadingStates(prevStates => ({ ...prevStates, [index]: true }));
     try {
       const response = await executeBlock(code, new Date(message.timestamp).toISOString());
@@ -179,67 +145,82 @@ function Message({ message, theme }) {
         ...prevCounts,
         [index]: (prevCounts[index] || 0) + 1
       }));
-
-      updateMessage(message.conversationId, message.content, { content: response.updated_content });
-      setLocalContent(response.updated_content);
+      updateMessageWrapper(response);
     } catch (error) {
       console.error('Error executing block:', error);
     } finally {
       setLoadingStates(prevStates => ({ ...prevStates, [index]: false }));
     }
-  }, [executeBlock, updateMessage, message]);
-
-  if (!message || !localContent) {
-    console.warn("Received empty or invalid message");
-    return null;
-  }
+  }, [executeBlock, updateMessageWrapper, message.timestamp]);
 
   const isUser = message.role === 'user';
   const formattedTimestamp = formatTimestamp(message.timestamp);
   const formattedMeta = formatMetaInfo(message);
 
+  useEffect(() => {
+    if (isStreaming && message.content) {
+      if (lastCodeBlockRef.current) {
+        lastCodeBlockRef.current.addContent(message.content);
+      }
+    }
+  }, [isStreaming, message.content]);
+
   const renderContent = () => {
-    return {
-      code: ({ node, inline, className, children, ...props }) => {
-        const match = /language-(\w+)/.exec(className || '');
-        const language = match ? match[1] : '';
-        const isExecutableBlock = !inline && ['sh', 'bash', 'zsh'].includes(language);
+    if (!message.content) return null;
 
-        if (isExecutableBlock) {
-          const codeString = String(children);
-          const codeIndex = JSON.stringify(codeString);
-          const isLoading = loadingStates[codeIndex];
+    const blocks = message.content.split(/^```/gm);
 
-          return (
-              <CodeBlock theme={theme}>
-                <CodeContent theme={theme}>{children}</CodeContent>
-                <ExecuteButton 
-                  onClick={() => handleExecute(codeString, codeIndex)}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <LoadingSpinner />
-                      LOADING
-                    </>
-                  ) : (
-                    <>
-                      EXECUTE
-                      <ExecuteCount>{executeCounts[codeIndex] > 0 ? `(${executeCounts[codeIndex]})` : ''}</ExecuteCount>
-                    </>
-                  )}
-                </ExecuteButton>
-              </CodeBlock>
-          );
-        }
+    return blocks.map((block, index) => {
+      if (index % 2 === 1) {
+        const [language, ...codeLines] = block.split('\n');
+        const code = codeLines.join('\n');
+        const isExecutable = ['sh', 'bash', 'zsh'].includes(language.trim());
+        const codeIndex = JSON.stringify(code);
+        const isLoading = loadingStates[codeIndex];
 
-        return <code className={className} {...props}>{children}</code>;
-      },
-      p: ({ children }) => <p>{children}</p>,
-      ul: ({ children }) => <ul>{children}</ul>,
-      ol: ({ children }) => <ol>{children}</ol>,
-      li: ({ children }) => <li>{children}</li>,
-    };
+        return (
+          <EditorWrapper key={index}>
+            <MonacoEditor
+              ref={el => {
+                editorRefs.current[index] = el;
+                if (index === blocks.length - 1) {
+                  lastCodeBlockRef.current = el;
+                }
+              }}
+              value={code}
+              language={language.trim()}
+              onChange={() => {}}
+              readOnly={!isExecutable || isStreaming}
+              options={{ scrollBeyondLastLine: false }}
+            />
+            {isExecutable && !isStreaming && (
+              <ExecuteButton
+                onClick={() => handleExecute(code, codeIndex)}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <LoadingSpinner />
+                    LOADING
+                  </>
+                ) : (
+                  <>
+                    EXECUTE
+                    <ExecuteCount>{executeCounts[codeIndex] > 0 ? `(${executeCounts[codeIndex]})` : ''}</ExecuteCount>
+                  </>
+                )}
+              </ExecuteButton>
+            )}
+          </EditorWrapper>
+        );
+      } else {
+        return (
+          <UserTextarea key={index}>
+            {block}
+          </UserTextarea>
+        );
+      }
+    });
   };
 
   return (
@@ -247,18 +228,17 @@ function Message({ message, theme }) {
       {isUser ? (
         <UserMessageContainer>
           <UserPrompt theme={theme}>$</UserPrompt>
-          <MessageContent>
-            <StyledMarkdown>{localContent}</StyledMarkdown>
-          </MessageContent>
+          <UserTextarea>
+            {message.content}
+          </UserTextarea>
         </UserMessageContainer>
       ) : (
-        <MessageContent>
-          <StyledMarkdown theme={theme} components={renderContent()}>
-            {localContent}
-          </StyledMarkdown>
-        </MessageContent>
+        <>
+          {renderContent()}
+          {isStreaming && <BlinkingCursor theme={theme} />}
+        </>
       )}
-      {formattedTimestamp && (
+      {formattedTimestamp && !isStreaming && (
         <Timestamp theme={theme}>
           {formattedTimestamp}
           {formattedMeta && <MetaInfo theme={theme}>{formattedMeta}</MetaInfo>}
@@ -266,6 +246,6 @@ function Message({ message, theme }) {
       )}
     </MessageContainer>
   );
-}
+});
 
 export default Message;

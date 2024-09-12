@@ -47,12 +47,21 @@ apt install byobu
 4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ## TODO
+- [ ] rerender bugs
+- [ ] height hugging monaco
+- [ ] live edit monaco
+- [ ] mergeing with monaco
+- [ ] streamed content refresh
+- [ ] correct parsing
+- [ ] height hugging
+- [ ] speech recognition
+- [x] error print isn't a message and it can cause problem like user, user sequence... also it can go visual glitch till it isn't resolved as it is attached to wrong object intead of messages
 - [x] When there is no server then we need to show a prompt how to set up. Also a button to refresh the page
   - [x] Conversation is actually selected as we can see it from the URL!
   - [x] Save should be automatic, not with button. 
   - [x] Also the ip and server should be inline.
   - [x] Also the port and ip in the text should be in sync.
-- [ ] error print isn't a message and it can cause problem like user, user sequence... also it can go visual glitch till it isn't resolved as it is attached to wrong object intead of messages
+- [x] multiline usermessage
 - [x] Don't remove the project_path if new conversation selected
 - [x] Voice activation of speech recognition. THINK ABOUT how to close the conversation via speech (Or the AI will guess a solution for this)!
 - [x] Jump to bottom

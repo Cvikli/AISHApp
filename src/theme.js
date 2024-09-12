@@ -1,8 +1,9 @@
 const commonStyles = {
-  textColor: '#0f0',
-  backgroundColor: '#000',
+  styleColor: '#0f0',
+  textColor: '#d4d4d4',
   borderColor: '#0f0',
   hoverColor: '#030',
+  backgroundColor: '#242424',
 };
 
 export const lightTheme = {
@@ -34,3 +35,4 @@ export const darkTheme = {
   selectedBackground: '#4a4a4a',
   codeBackground: '#2a2a2a',
 };
+

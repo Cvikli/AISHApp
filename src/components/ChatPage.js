@@ -11,7 +11,6 @@ const DefaultMessage = styled.div`
   justify-content: center;
   align-items: center;
   height: 100%;
-  font-family: 'Courier New', monospace;
   font-weight: 300;
   color: white;
   background-color: ${props => props.theme.backgroundColor};

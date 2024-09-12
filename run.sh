@@ -1,28 +1,38 @@
 #!/bin/bash
 
-# Check if byobu is installed
-if ! command -v byobu &> /dev/null
-then
-    echo "byobu could not be found. Please install byobu."
-    exit 1
-fi
+# Function to check if wezterm is available and set the command
+set_wezterm_command() {
+    if command -v wezterm &> /dev/null; then
+        WEZTERM_CMD="wezterm"
+    elif flatpak list | grep -q org.wezfurlong.wezterm; then
+        WEZTERM_CMD="flatpak run org.wezfurlong.wezterm"
+    elif alias wezterm &> /dev/null; then
+        WEZTERM_CMD="$(alias wezterm | sed "s/alias wezterm='\(.*\)'/\1/")"
+    else
+        echo "wezterm could not be found. Please install wezterm or set up an alias."
+        exit 1
+    fi
+}
 
-# Create a new byobu session named 'julia-react-app'
-byobu new-session -d -s julia-react-app -n 'Julia-React' \; split-window -h
+# Set the wezterm command
+set_wezterm_command
 
-# Select the left pane (pane 0) and run the Julia server
-byobu select-pane -t 0
-byobu send-keys "cd ../AISHServer && git ls-files | entr -r julia server.jl" C-m
+# Start the Julia server in a new tab
+$WEZTERM_CMD start --cwd ../AISHServer -- bash -c '
+    echo "Starting Julia server..."
+    git ls-files | entr -r julia server.jl
+    exec $SHELL
+' &
 
-# Select the right pane (pane 1) and run the React frontend
-byobu select-pane -t 1
-byobu send-keys "cd ../AISHApp && npm start" C-m
+# Start the React frontend in another new tab
+$WEZTERM_CMD start --cwd ../AISHApp -- bash -c '
+    echo "Starting React frontend..."
+    npm start
+    exec $SHELL
+'
 
-byobu select-pane -t 0
+# Disown both background processes
+disown -a
 
-# Attach to the byobu session
-byobu attach-session -t julia-react-app
-
-
-# This traps SIGINT (ctrl+C) and ensures the byobu session is killed
-trap "byobu kill-session -t julia-react-app" SIGINT SIGTERM EXIT
+# Exit the script
+exit 0
