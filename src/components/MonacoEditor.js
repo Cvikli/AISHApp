@@ -8,7 +8,7 @@ const EditorWrapper = styled.div`
   }
 `;
 
-const MonacoEditor = forwardRef(({ value, language, onChange, readOnly = false }, ref) => {
+const MonacoEditor = forwardRef(({ value, language, onChange, readOnly = false, onScroll }, ref) => {
   const editorRef = useRef(null);
   const wrapperRef = useRef(null);
   const [editorLanguage, setEditorLanguage] = useState(language || "plaintext");
@@ -38,7 +38,6 @@ const MonacoEditor = forwardRef(({ value, language, onChange, readOnly = false }
 
   const getLanguageFromExtension = (extension) => {
     const languageMap = {
-      // Web development
       'js': 'javascript',
       'ts': 'typescript',
       'html': 'html',
@@ -49,8 +48,6 @@ const MonacoEditor = forwardRef(({ value, language, onChange, readOnly = false }
       'json': 'json',
       'xml': 'xml',
       'svg': 'xml',
-
-      // Backend languages
       'py': 'python',
       'rb': 'ruby',
       'php': 'php',
@@ -61,26 +58,18 @@ const MonacoEditor = forwardRef(({ value, language, onChange, readOnly = false }
       'scala': 'scala',
       'kt': 'kotlin',
       'swift': 'swift',
-
-      // Scripting languages
       'sh': 'shell',
       'bash': 'shell',
       'zsh': 'shell',
       'ps1': 'powershell',
       'bat': 'bat',
       'cmd': 'bat',
-
-      // Markup and config
       'md': 'markdown',
       'yaml': 'yaml',
       'yml': 'yaml',
       'toml': 'toml',
       'ini': 'ini',
-
-      // Database
       'sql': 'sql',
-
-      // Other
       'c': 'c',
       'cpp': 'cpp',
       'h': 'c',
@@ -210,7 +199,7 @@ const MonacoEditor = forwardRef(({ value, language, onChange, readOnly = false }
     wrapperRef.current.addEventListener('wheel', handleScroll, { passive: false });
   };
 
-   const handleScroll = (event) => {
+  const handleScroll = (event) => {
         event.preventDefault();
         const { deltaY } = event;
         const editor = editorRef.current;
@@ -238,7 +227,7 @@ const MonacoEditor = forwardRef(({ value, language, onChange, readOnly = false }
             // We're within the editor content, so scroll the editor
             scrollable.setScrollTop(scrollTop + deltaY);
         }
-    };
+  };
 
   useEffect(() => {
     return () => {

@@ -192,6 +192,10 @@ const Message = React.memo(({ message, theme, isStreaming = false }) => {
               onChange={() => {}}
               readOnly={!isExecutable || isStreaming}
               options={{ scrollBeyondLastLine: false }}
+              onScroll={(scrollTop) => {
+                // Handle scroll event if needed
+                console.log('Editor scrolled:', scrollTop);
+              }}
             />
             {isExecutable && !isStreaming && (
               <ExecuteButton
