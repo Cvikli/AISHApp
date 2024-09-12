@@ -107,7 +107,6 @@ const ChatComponent = () => {
     return true;
   }, []);
 
-
   useEffect(() => {
     const messageHistory = messageHistoryRef.current;
     if (messageHistory) {
@@ -144,6 +143,7 @@ const ChatComponent = () => {
       try {
         await streamProcessMessage(
           trimmedInput,
+          conversationId, 
           (content) => {
             stream_content += content;
             setTempAIMessage(prev => ({
@@ -197,8 +197,6 @@ const ChatComponent = () => {
     }
   }, [conversationId, addMessage]);
 
-
-
   return (
     <ChatContainer theme={theme}>
       <MessageHistory ref={messageHistoryRef} theme={theme}>
@@ -251,7 +249,6 @@ const ChatComponent = () => {
         setVoiceState={setVoiceState}
         toggleSTTListening={toggleSTTListening}
         language={language}
-        // glowAnimation={glowAnimation}
       />
     </ChatContainer>
   );

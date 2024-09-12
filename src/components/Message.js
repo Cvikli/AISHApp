@@ -9,7 +9,7 @@ const MessageContainer = styled.div`
   padding: 5px 10px;
   background-color: ${props => props.theme.backgroundColor};
   color: white;
-  border-left: ${props => props.$isUser ? `10px solid ${props.theme.textColor}` : 'none'};
+  border-left: ${props => props.$isUser ? `10px solid ${props.theme.styleColor}` : 'none'};
 `;
 
 const UserMessageContainer = styled.div`
@@ -22,7 +22,7 @@ const EditorWrapper = styled.div`
 `;
 
 const UserPrompt = styled.span`
-  color: ${props => props.theme.textColor};
+  color: ${props => props.theme.styleColor};
   font-weight: bold;
   margin-right: 8px;
   flex-shrink: 0;
@@ -102,7 +102,7 @@ const BlinkingCursor = styled.span`
   display: inline-block;
   width: 0.5em;
   height: 1em;
-  background-color: ${props => props.theme.textColor};
+  background-color: ${props => props.theme.styleColor};
   animation: ${blinkingCursor} 1s infinite;
   vertical-align: middle;
 `;

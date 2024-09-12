@@ -10,6 +10,7 @@ const EditorWrapper = styled.div`
 
 const MonacoEditor = forwardRef(({ value, language, onChange, readOnly = false }, ref) => {
   const editorRef = useRef(null);
+  const wrapperRef = useRef(null);
   const [editorLanguage, setEditorLanguage] = useState(language || "plaintext");
   const [editorValue, setEditorValue] = useState(value);
   const resizeTimeoutRef = useRef(null);
@@ -193,7 +194,59 @@ const MonacoEditor = forwardRef(({ value, language, onChange, readOnly = false }
         editor.layout({ height: contentHeight, width: editor.getLayoutInfo().width });
       }, 100);
     });
+
+    // Set up scroll listener
+    editor.onDidScrollChange((e) => {
+        if (onScroll) {
+            onScroll(e.scrollTop);
+        }
+    });
+
+    // Disable the editor's built-in scrolling
+    const editorDomNode = editor.getDomNode();
+    editorDomNode.style.overflow = 'hidden';
+
+    // Add our custom scroll handler to the wrapper
+    wrapperRef.current.addEventListener('wheel', handleScroll, { passive: false });
   };
+
+   const handleScroll = (event) => {
+        event.preventDefault();
+        const { deltaY } = event;
+        const editor = editorRef.current;
+        const scrollable = editor.getScrollable();
+        const scrollTop = scrollable.getScrollTop();
+        const scrollHeight = scrollable.getScrollHeight();
+        const clientHeight = editor.getLayoutInfo().height;
+
+        const isScrollingUp = deltaY < 0;
+        const isScrollingDown = deltaY > 0;
+
+        const isAtTop = scrollTop === 0;
+        const isAtBottom = scrollTop + clientHeight >= scrollHeight;
+
+        if ((isScrollingUp && isAtTop) || (isScrollingDown && isAtBottom)) {
+            // We're at the limit, so propagate the event to the parent
+            const parentElement = wrapperRef.current.parentElement;
+            const wheelEvent = new WheelEvent('wheel', {
+                deltaY: deltaY,
+                bubbles: true,
+                cancelable: true
+            });
+            parentElement.dispatchEvent(wheelEvent);
+        } else {
+            // We're within the editor content, so scroll the editor
+            scrollable.setScrollTop(scrollTop + deltaY);
+        }
+    };
+
+  useEffect(() => {
+    return () => {
+      if (wrapperRef.current) {
+        wrapperRef.current.removeEventListener('wheel', handleScroll);
+      }
+    };
+  }, []);
 
   useImperativeHandle(ref, () => ({
     addContent: (newContent) => {
@@ -220,7 +273,7 @@ const MonacoEditor = forwardRef(({ value, language, onChange, readOnly = false }
   }));
 
   return (
-    <EditorWrapper>
+    <EditorWrapper ref={wrapperRef}>
       <Editor
         height="auto"
         language={editorLanguage}
@@ -243,6 +296,7 @@ const MonacoEditor = forwardRef(({ value, language, onChange, readOnly = false }
             verticalScrollbarSize: 12,
             horizontalScrollbarSize: 12,
             useShadows: false,
+            alwaysConsumeMouseWheel: false
           },
           automaticLayout: true,
           formatOnPaste: true,

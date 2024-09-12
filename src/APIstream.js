@@ -1,12 +1,12 @@
 const API_BASE_URL = 'http://localhost:8002';
 
-export const streamProcessMessage = async (message, onMessage, user_meta, onDone) => {
+export const streamProcessMessage = async (message, conversation_id, onMessage, user_meta, onDone) => {
   const response = await fetch(`${API_BASE_URL}/stream/process_message`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ new_message: message }),
+    body: JSON.stringify({ new_message: message, conversation_id: conversation_id }),
   });
 
   const reader = response.body.getReader();
