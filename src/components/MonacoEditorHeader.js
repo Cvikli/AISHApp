@@ -17,21 +17,30 @@ const Filename = styled.span`
   color: ${props => props.theme.textColor};
 `;
 
+const Instructions = styled.div`
+  font-size: 12px;
+  color: ${props => props.theme.textColor};
+  margin-right: 10px;
+`;
+
 const ButtonGroup = styled.div`
   display: flex;
   gap: 0px;
 `;
 
 const HeaderButton = styled(Button)`
-  padding: 4px 8px; 
+  padding: 4px 8px;
   border: 1px solid ${props => props.theme.buttonBorderColor};
   font-size: inherit;
 `;
 
-const MonacoEditorHeader = ({ filename, onCopy, onAccept, onReject, showMergeOptions, children }) => {
+const MonacoEditorHeader = ({ filename, onCopy, onAccept, onReject, onSave, showMergeOptions, children }) => {
   return (
     <HeaderContainer>
       <Filename>{filename}</Filename>
+      <Instructions>
+        Click on glyph margin to accept, Alt+Click to reject changes
+      </Instructions>
       <ButtonGroup>
         {children}
         {showMergeOptions && (
@@ -40,6 +49,7 @@ const MonacoEditorHeader = ({ filename, onCopy, onAccept, onReject, showMergeOpt
             <HeaderButton onClick={onReject}>Reject ✗</HeaderButton>
           </>
         )}
+        <HeaderButton onClick={onSave}>Save</HeaderButton>
         <HeaderButton onClick={onCopy}>Copy</HeaderButton>
       </ButtonGroup>
     </HeaderContainer>

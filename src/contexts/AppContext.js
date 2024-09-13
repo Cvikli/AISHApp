@@ -77,8 +77,25 @@ export const AppProvider = ({ children }) => {
     setPath: createApiMethod('set_path', 'post'),
     listItems: createApiMethod('list_items', 'post'),
     executeBlock: createApiMethod('execute_block', 'post'),
+    getWholeChanges: createApiMethod('get_whole_changes', 'post'),
     toggleAutoExecute: createApiMethod('toggle_auto_execute', 'post'),
+    saveFile: createApiMethod('save_file', 'post'),
   }), [createApiMethod]);
+
+  const saveFile = useCallback(async (filename, content) => {
+    try {
+      const response = await api.saveFile({ filename, content });
+      if (response.status === 'success') {
+        console.log('File saved successfully');
+        // You might want to update some state or show a notification here
+      } else {
+        throw new Error(response.message || 'Failed to save file');
+      }
+    } catch (error) {
+      console.error('Error saving file:', error);
+      // Handle the error (e.g., show an error message to the user)
+    }
+  }, [api]);
 
   const initializeApp = useCallback(async () => {
     try {
@@ -224,7 +241,11 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const executeBlock = useCallback(async (code, timestamp) => {
-    return await api.executeBlock({ code, timestamp });
+    if (code.trim().startsWith('meld ')) {
+      return await api.getWholeChanges({ code, timestamp });
+    } else {
+      return await api.executeBlock({ code, timestamp });
+    }
   }, [api]);
 
   const toggleAutoExecute = useCallback(async () => {
@@ -415,6 +436,7 @@ export const AppProvider = ({ children }) => {
     toggleAutoReconnect,
     isResponsePending,
     setIsResponsePending,
+    saveFile,
   }), [
     theme,
     isDarkMode,
@@ -453,6 +475,7 @@ export const AppProvider = ({ children }) => {
     toggleAutoReconnect,
     isResponsePending,
     setIsResponsePending,
+    saveFile,
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

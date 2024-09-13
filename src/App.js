@@ -4,6 +4,7 @@ import { AppProvider, useAppContext } from './contexts/AppContext';
 import Layout from './components/Layout';
 import ChatPage from './components/ChatPage';
 import { ThemeProvider } from 'styled-components';
+import './styles/diff.css';
 
 const AppContent = () => {
   const { theme } = useAppContext();

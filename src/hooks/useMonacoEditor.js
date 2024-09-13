@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { defineMonacoTheme } from '../utils/monacoTheme';
 
-export const useMonacoEditor = (onChange, onScroll) => {
+
+export const useMonacoEditor = () => {
   const editorRef = useRef(null);
+  const monacoRef = useRef(null);
   const resizeTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -15,13 +16,16 @@ export const useMonacoEditor = (onChange, onScroll) => {
 
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
+    monacoRef.current = monaco;
 
-    defineMonacoTheme(monaco);
-    monaco.editor.setTheme('one-monokai');
+    if (monaco) {
 
-    const editorDomNode = editor.getDomNode();
-    editorDomNode.style.overflow = 'hidden';
+      monaco.editor.setTheme('one-monokai');
+    }
+
+    // const editorDomNode = editor.getDomNode();
+    // editorDomNode.style.overflow = 'hidden';
   };
 
-  return { editorRef, handleEditorDidMount };
+  return { editorRef, monacoRef, handleEditorDidMount };
 };

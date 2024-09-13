@@ -78,14 +78,15 @@ const ChatComponent = () => {
     finalTranscript,
     interimTranscript,
     toggleSTTListening,
-    language
+    language,
+    delMessage,
+    updateMessage
   } = useAppContext();
 
   const { conversationId } = useParams();
 
   const [isReceivingMessage, setIsReceivingMessage] = useState(false);
   const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
-  const [tempUserMessage, setTempUserMessage] = useState(null);
   const [tempAIMessage, setTempAIMessage] = useState(null);
 
   const messageEndRef = useRef(null);
@@ -131,12 +132,15 @@ const ChatComponent = () => {
   const handleSend = useCallback(async (trimmedInput) => {
     console.log('ChatComponent: handleSend called');
     if (trimmedInput) {
-      const tempMessage = {
-        id: 'temp-user-message',
+      const user_msg_id = uuidv4();
+      const userMessage = {
+        id: user_msg_id,
         role: 'user',
-        content: trimmedInput
+        content: trimmedInput,
       };
-      setTempUserMessage(tempMessage);
+      
+      // Add user message to the conversation immediately
+      addMessage(conversationId, userMessage);
 
       setIsReceivingMessage(true);
       let stream_content = '';
@@ -152,12 +156,13 @@ const ChatComponent = () => {
             }));
           },
           (inMeta) => {
+
+            delMessage(conversationId, user_msg_id)
             addMessage(conversationId, {
               role: 'user',
               content: trimmedInput,
               ...inMeta // timestamp, id and metas...
             });
-            setTempUserMessage(null);
             setTempAIMessage({
               id: uuidv4(),
               role: 'assistant',
@@ -182,17 +187,15 @@ const ChatComponent = () => {
         const errorMessage = `\n\nError: ${error.message}`;
 
         addMessage(conversationId, {
-          id: Date.now().toString(),
+          id: uuidv4(),
           role: 'assistant',
-          content: stream_content + errorMessage,
-          timestamp: new Date(),
-          error: error.message
+          content: stream_content + '\n' + errorMessage,
+          timestamp: new Date().toISOString(),
         });
 
         setIsReceivingMessage(false);
         setTempAIMessage(null);
         stream_content = '';
-        setTempUserMessage(null);
       }
     }
   }, [conversationId, addMessage]);
@@ -213,12 +216,6 @@ const ChatComponent = () => {
             theme={theme}
           />
         ))}
-        {tempUserMessage && <Message
-          key="temp-user-message"
-          message={tempUserMessage}
-          isStreaming={false}
-          theme={theme}
-        />}
         {tempAIMessage && <Message
           key="temp-ai-message"
           message={tempAIMessage}

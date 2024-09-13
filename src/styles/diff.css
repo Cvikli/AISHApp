@@ -1,0 +1,7 @@
+.insertion-background {
+  background-color: rgba(0, 255, 0, 0.2);
+}
+
+.deletion-background {
+  background-color: rgba(255, 0, 0, 0.2);
+}
