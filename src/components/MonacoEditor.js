@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useImperativeHandle, forwardRef, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Editor } from "@monaco-editor/react";
 import styled from 'styled-components';
 import { getLanguageFromExtension } from '../utils/languageDetection';
 import { defineMonacoTheme } from '../utils/monacoTheme';
 import MonacoEditorHeader from './MonacoEditorHeader';
 import { useAppContext } from '../contexts/AppContext';
-import { parseDiff } from '../utils/diffParser';
+import { parseDiff, renderContentFromDiff, updateDiffFromEdit } from '../utils/diffUtils';
 
 const EditorContainer = styled.div`
   border: 1px solid ${props => props.theme.borderColor};
@@ -29,7 +29,7 @@ const ExecuteButton = styled.button`
   color: ${props => props.theme.textColor};
   border: 1px solid ${props => props.theme.borderColor};
   cursor: pointer;
-  display: ${props => props.isVisible ? 'flex' : 'none'};
+  display: ${props => props.$isVisible ? 'flex' : 'none'};
   align-items: center;
   justify-content: center;
   min-width: 100px;

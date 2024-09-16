@@ -47,19 +47,18 @@ export const streamProcessMessage = async (message, conversation_id, onMessage, 
                 onMessage('\n');
                 onMessage(parsedData.content);
                 onDone(ai_meta);
-                break
+                break;
               case 'start':
               case 'ping':
                 break;
               default:
-                console.log("unhandled!!")
-                console.log(event)
-                console.log(parsedData)
+                console.log("unhandled!!");
+                console.log(event);
+                console.log(parsedData);
             }
           } catch (error) {
             console.warn('Error parsing JSON:', error);
             onMessage(error);
-
           }
           buffer = '';
         }
@@ -80,3 +79,4 @@ export const streamProcessMessage = async (message, conversation_id, onMessage, 
     processChunk(buffer);
   }
 };
+

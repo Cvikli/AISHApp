@@ -1,7 +1,48 @@
 .insertion-background {
-  background-color: rgba(0, 255, 0, 0.2);
+  background-color: rgba(0, 255, 0, 0.3);
 }
 
 .deletion-background {
-  background-color: rgba(255, 0, 0, 0.2);
+  background-color: rgba(255, 0, 0, 0.4);
+}
+
+.glyph-insertion {
+  background-color: green;
+  width: 5px !important;
+  margin-left: 3px;
+}
+
+.glyph-deletion {
+  background-color: red;
+  width: 5px !important;
+  margin-left: 3px;
+}
+
+.monaco-editor .contentWidgets {
+  z-index: 1000;
+}
+
+.monaco-editor .contentWidget {
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.monaco-editor .contentWidget > div {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.monaco-editor .contentWidget button {
+  margin-left: 0px;
+  transition: opacity 0.2s;
+  font-size: 12px;
+  padding: 2px 4px;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.monaco-editor .contentWidget button:hover {
+  opacity: 0.8;
 }

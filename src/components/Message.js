@@ -1,7 +1,6 @@
-import React, { useCallback, useEffect, memo, useRef } from 'react';
+import React, { useCallback, memo } from 'react';
 import styled, { keyframes } from 'styled-components';
 import MonacoEditor from './MonacoEditor';
-import { useAppContext } from '../contexts/AppContext';
 
 const MessageContainer = styled.div`
   margin: 8px 0;
@@ -92,18 +91,9 @@ const formatMetaInfo = (msg) => {
 };
 
 const Message = memo(({ message, theme, isStreaming = false }) => {
-  const editorRefs = useRef({});
-  const lastCodeBlockRef = useRef(null);
-  const { updateMessage } = useAppContext();
-
   const isUser = message.role === 'user';
   const formattedTimestamp = formatTimestamp(message.timestamp);
   const formattedMeta = formatMetaInfo(message);
-
-  const handleEditorChange = useCallback((newValue, index) => {
-    console.log("Editor change detected:", newValue);
-    updateMessage(message.conversationId, message.id, { content: newValue });
-  }, [message.conversationId, message.id, updateMessage]);
 
   const renderContent = useCallback(() => {
     if (!message.content) return null;
@@ -119,12 +109,6 @@ const Message = memo(({ message, theme, isStreaming = false }) => {
         return (
           <EditorWrapper key={index}>
             <MonacoEditor
-              ref={el => {
-                editorRefs.current[index] = el;
-                if (index === blocks.length - 1) {
-                  lastCodeBlockRef.current = el;
-                }
-              }}
               value={code}
               language={language.trim()}
               readOnly={!isExecutable || isStreaming}
@@ -132,7 +116,7 @@ const Message = memo(({ message, theme, isStreaming = false }) => {
               autoExecute={isExecutable && (!isStreaming || index !== blocks.length - 1)}
               messageTimestamp={message.timestamp}
               theme={theme}
-              onChange={(newValue) => handleEditorChange(newValue, index)}
+              onChange={(newValue) => console.log(index)}
             />
           </EditorWrapper>
         );
@@ -144,7 +128,7 @@ const Message = memo(({ message, theme, isStreaming = false }) => {
         );
       }
     });
-  }, [message.content, isStreaming, message.timestamp, theme, handleEditorChange]);
+  }, [message.content, isStreaming, message.timestamp, theme]);
 
   return (
     <MessageContainer $isUser={isUser} theme={theme}>

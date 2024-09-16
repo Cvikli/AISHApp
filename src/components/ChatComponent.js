@@ -164,7 +164,6 @@ const ChatComponent = () => {
               ...inMeta // timestamp, id and metas...
             });
             setTempAIMessage({
-              id: uuidv4(),
               role: 'assistant',
               content: '',
               timestamp: new Date().toISOString()
