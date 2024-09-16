@@ -226,9 +226,10 @@ const MonacoEditor = ({ value, language, onChange, readOnly = false, isExecutabl
       const monaco = monacoRef.current;
 
       // Remove existing content widgets
-      const contentWidgets = editor.getContentWidgets();
-      Object.keys(contentWidgets).forEach(widgetId => {
-        editor.removeContentWidget(contentWidgets[widgetId]);
+      editor.getModel().getAllDecorations().forEach(decoration => {
+        if (decoration.options.beforeContentClassName === 'change-button-widget') {
+          editor.deltaDecorations([decoration.id], []);
+        }
       });
 
       diff.forEach(change => {
