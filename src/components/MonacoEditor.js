@@ -174,9 +174,25 @@ const MonacoEditor = ({
 
   const handleChange = useCallback(
     (newValue) => {
-      // Handle editor changes if necessary
+      if (!isEditorReady || !editorRef.current) return;
+  
+      const updatedDiff = updateDiffFromEdit(diff, newValue);
+      setDiff(updatedDiff);
+  
+      const { content, decorations: newDecorations } = renderContentFromDiff(
+        updatedDiff,
+        monacoRef.current
+      );
+      setEditorValue(content);
+      setDecorations(newDecorations);
+      setChangeHistory((prev) => [...prev.slice(0, historyIndex + 1), updatedDiff]);
+      setHistoryIndex((prev) => prev + 1);
+  
+      if (onChange) {
+        onChange(content);
+      }
     },
-    []
+    [diff, onChange, historyIndex, isEditorReady]
   );
 
   useEffect(() => {
@@ -250,7 +266,7 @@ const MonacoEditor = ({
           d.id === changeId
             ? {
                 ...d,
-                type: 'equal',
+                type: (d.type.startsWith('char_') ? 'char_' : '') + 'equal',
                 equalContent: d.equalContent + d.insertContent,
                 insertContent: '',
                 deleteContent: '',
@@ -285,7 +301,7 @@ const MonacoEditor = ({
           d.id === changeId
             ? {
                 ...d,
-                type: 'equal',
+                type: (d.type.startsWith('char_') ? 'char_' : '') + 'equal',
                 equalContent: d.equalContent + d.deleteContent,
                 insertContent: '',
                 deleteContent: '',
@@ -315,7 +331,7 @@ const MonacoEditor = ({
 
   const addChangeButtons = useCallback(() => {
     if (!editorRef.current || !monacoRef.current) return;
-    
+
     const editor = editorRef.current;
     const monaco = monacoRef.current;
 

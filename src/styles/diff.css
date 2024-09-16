@@ -1,9 +1,9 @@
 .char_insert-background {
-  background-color: rgba(0, 255, 0, 0.6);
+  background-color: rgba(144, 238, 144, 0.5); /* Light green */
 }
 
 .char_delete-background {
-  background-color: rgba(255, 0, 0, 0.5);
+  background-color: rgba(255, 182, 193, 0.5); /* Light red */
 }
 
 .insert-background {
