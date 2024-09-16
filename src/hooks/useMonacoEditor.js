@@ -19,8 +19,12 @@ export const useMonacoEditor = () => {
     monacoRef.current = monaco;
 
     if (monaco) {
+      try {
+        monaco.editor.setTheme('one-monokai');
+      } catch (error) {
+        console.error('Error setting Monaco theme:', error);
+      }
 
-      monaco.editor.setTheme('one-monokai');
     }
 
     // const editorDomNode = editor.getDomNode();

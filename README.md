@@ -46,6 +46,11 @@ apt install byobu
 
 4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
+- [ ] diff is the internal... and visualization generated from this.
+- [ ] also currently it just doesn't generate itself.
+- [ ] insert_deletion and char_insert_deletion... the AI forgot about that we have these classes... so ex: insert_deletion-background instead of insertion-background...
+
+
 ## TODO
 - [ ] rerender bugs
 - [ ] height hugging monaco
@@ -54,6 +59,7 @@ apt install byobu
 - [ ] streamed content refresh
 - [ ] correct parsing
 - [ ] height hugging
+- [ ] cache timeout counter!
 - [ ] speech recognition
 - [x] error print isn't a message and it can cause problem like user, user sequence... also it can go visual glitch till it isn't resolved as it is attached to wrong object intead of messages
 - [x] When there is no server then we need to show a prompt how to set up. Also a button to refresh the page

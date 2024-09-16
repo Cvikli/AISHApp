@@ -241,7 +241,7 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   const executeBlock = useCallback(async (code, timestamp) => { // TODO change timestamp to id
-    if (code.trim().startsWith('meld ')) {
+    if (code.startsWith('meld ')) {
       return await api.getWholeChanges({ code, timestamp });
     } else {
       return await api.executeBlock({ code, timestamp });
