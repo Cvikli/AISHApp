@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Editor } from "@monaco-editor/react";
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
+import { Editor } from "@monaco-editor/react";
 import { getLanguageFromExtension } from '../utils/languageDetection';
 import { defineMonacoTheme } from '../utils/monacoTheme';
 import MonacoEditorHeader from './MonacoEditorHeader';
@@ -55,9 +55,17 @@ const ExecuteCount = styled.span`
   color: ${props => props.theme.textColor};
 `;
 
-const MonacoEditor = ({ value, language, onChange, readOnly = false, isExecutable, messageTimestamp, theme }) => {
+const MonacoEditor = ({
+  value,
+  language,
+  onChange,
+  readOnly = false,
+  isExecutable,
+  messageTimestamp,
+  theme,
+}) => {
   const { saveFile, executeBlock } = useAppContext();
-  const [editorLanguage, setEditorLanguage] = useState(language || "plaintext");
+  const [editorLanguage, setEditorLanguage] = useState(language || 'plaintext');
   const [filename, setFilename] = useState('Untitled');
   const [isLoading, setIsLoading] = useState(false);
   const [executeCount, setExecuteCount] = useState(0);
@@ -68,22 +76,84 @@ const MonacoEditor = ({ value, language, onChange, readOnly = false, isExecutabl
   const [decorations, setDecorations] = useState([]);
   const [changeHistory, setChangeHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
+  const widgetsRef = useRef([]);
+  const [isEditorReady, setIsEditorReady] = useState(false);
+
+  const handleUndo = useCallback(() => {
+    if (historyIndex > 0) {
+      const prevDiff = changeHistory[historyIndex - 1];
+      const { content, decorations: newDecorations } = renderContentFromDiff(
+        prevDiff,
+        monacoRef.current
+      );
+      setEditorValue(content);
+      setDecorations(newDecorations);
+      setDiff(prevDiff);
+      setHistoryIndex((prev) => prev - 1);
+      if (editorRef.current) {
+        editorRef.current.setValue(content);
+      }
+    }
+  }, [changeHistory, historyIndex]);
+
+  const handleRedo = useCallback(() => {
+    if (historyIndex < changeHistory.length - 1) {
+      const nextDiff = changeHistory[historyIndex + 1];
+      const { content, decorations: newDecorations } = renderContentFromDiff(
+        nextDiff,
+        monacoRef.current
+      );
+      setEditorValue(content);
+      setDecorations(newDecorations);
+      setDiff(nextDiff);
+      setHistoryIndex((prev) => prev + 1);
+      if (editorRef.current) {
+        editorRef.current.setValue(content);
+      }
+    }
+  }, [changeHistory, historyIndex]);
+
+  const handleEditorDidMount = useCallback(
+    (editor, monaco) => {
+      if (!editor || !monaco) return;
+
+      editorRef.current = editor;
+      monacoRef.current = monaco;
+
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_Z, () => handleUndo());
+      editor.addCommand(
+        monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KEY_Z,
+        () => handleRedo()
+      );
+
+      if (monaco) {
+        defineMonacoTheme(monaco);
+        monaco.editor.setTheme('one-monokai');
+      }
+
+      setIsEditorReady(true);
+    },
+    [handleUndo, handleRedo]
+  );
 
   useEffect(() => {
-    if (!monacoRef.current) return;
+    if (!monacoRef.current || !isEditorReady) return;
 
-    const initialDiff = parseDiff([['equal', value || '', '']]);
+    const initialDiff = parseDiff([['equal', value || '', '', '']]);
     setDiff(initialDiff);
-    const { content: initialContent, decorations: initialDecorations } = renderContentFromDiff(initialDiff, monacoRef.current);
+    const { content: initialContent, decorations: initialDecorations } = renderContentFromDiff(
+      initialDiff,
+      monacoRef.current
+    );
+    setChangeHistory([initialDiff]);
     setEditorValue(initialContent);
     setDecorations(initialDecorations);
-    setChangeHistory([{ value: initialContent, decorations: initialDecorations }]);
     setHistoryIndex(0);
-  }, [value, monacoRef]);
+  }, [value, isEditorReady]);
 
   useEffect(() => {
     let detectedFilename = 'Untitled';
-    
+
     if (typeof editorValue === 'string' && editorValue.startsWith('meld ')) {
       const match = editorValue.match(/meld\s+(\S+)/);
       if (match) {
@@ -98,212 +168,34 @@ const MonacoEditor = ({ value, language, onChange, readOnly = false, isExecutabl
     setFilename(detectedFilename);
   }, [editorValue, language]);
 
-  const handleChange = useCallback((newValue) => {
-    console.log("newValue")
-    console.log(newValue)
-    // const updatedDiff = updateDiffFromEdit(diff, newValue);
-    // setDiff(updatedDiff);
-    // const { content, decorations: newDecorations } = renderContentFromDiff(updatedDiff, monacoRef.current);
-    // setEditorValue(content);
-    // setDecorations(newDecorations);
-    // if (onChange) {
-    //   onChange(content);
-    // }
-  }, [diff, onChange]);
+  const reconstructFileContent = useCallback(() => {
+    return diff.map((change) => change.equalContent + change.insertContent).join('');
+  }, [diff]);
 
-  const handleExecute = useCallback(async () => {
-    if (isExecutable) {
-      setIsLoading(true);
-      try {
-        const response = await executeBlock(editorValue, messageTimestamp);
-        if (response.status === 'success' && response.diff) {
-          console.log("response.diff");
-          console.log(response.diff);
-          const newDiff = parseDiff(response.diff);
-          setDiff(newDiff);
-          const { content, decorations: newDecorations } = renderContentFromDiff(newDiff, monacoRef.current);
-          setEditorValue(content);
-          setDecorations(newDecorations);
-          console.log(newDecorations)
-          setChangeHistory(prev => [...prev, { value: content, decorations: newDecorations }]);
-          setHistoryIndex(prev => prev + 1);
-        }
-        setExecuteCount(prev => prev + 1);
-      } catch (error) {
-        console.error('Error executing block:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  }, [isExecutable, editorValue, messageTimestamp, executeBlock, historyIndex]);
+  const handleChange = useCallback(
+    (newValue) => {
+      // Handle editor changes if necessary
+    },
+    []
+  );
 
-  const handleAcceptChange = useCallback((changeId) => {
-    setDiff(prevDiff => {
-      const changeIndex = prevDiff.findIndex(d => d.id === changeId);
-      if (changeIndex === -1) return prevDiff;
-
-      const updatedDiff = [...prevDiff];
-      const currentChange = updatedDiff[changeIndex];
-
-      if (currentChange.type === 'equal') return prevDiff;
-
-      updatedDiff[changeIndex] = {
-        ...currentChange,
-        type: 'equal',
-        deletionContent: '',
-      };
-
-      const { content, decorations: newDecorations } = renderContentFromDiff(updatedDiff, monacoRef.current);
-      setEditorValue(content);
-      setDecorations(newDecorations);
-      setChangeHistory(prev => [...prev, { value: content, decorations: newDecorations }]);
-      setHistoryIndex(prev => prev + 1);
-      if (onChange) {
-        onChange(content);
-      }
-      if (editorRef.current) {
-        editorRef.current.setValue(content);
-      }
-
-      return updatedDiff;
-    });
-  }, [onChange]);
-
-  const handleRejectChange = useCallback((changeId) => {
-    setDiff(prevDiff => {
-      const changeIndex = prevDiff.findIndex(d => d.id === changeId);
-      if (changeIndex === -1) return prevDiff;
-
-      const updatedDiff = [...prevDiff];
-      const currentChange = updatedDiff[changeIndex];
-
-      if (currentChange.type === 'equal') return prevDiff;
-
-      updatedDiff[changeIndex] = {
-        ...currentChange,
-        type: 'equal',
-        insertionContent: currentChange.deletionContent,
-        deletionContent: '',
-      };
-
-      const { content, decorations: newDecorations } = renderContentFromDiff(updatedDiff, monacoRef.current);
-      setEditorValue(content);
-      setDecorations(newDecorations);
-      setChangeHistory(prev => [...prev, { value: content, decorations: newDecorations }]);
-      setHistoryIndex(prev => prev + 1);
-      if (onChange) {
-        onChange(content);
-      }
-      if (editorRef.current) {
-        editorRef.current.setValue(content);
-      }
-      return updatedDiff;
-    });
-  }, [onChange]);
-
-  const handleUndo = useCallback(() => {
-    if (historyIndex > 0) {
-      const prevState = changeHistory[historyIndex - 1];
-      setEditorValue(prevState.value);
-      setDecorations(prevState.decorations);
-      setHistoryIndex(prev => prev - 1);
-    }
-  }, [changeHistory, historyIndex]);
-
-  const handleRedo = useCallback(() => {
-    if (historyIndex < changeHistory.length - 1) {
-      const nextState = changeHistory[historyIndex + 1];
-      setEditorValue(nextState.value);
-      setDecorations(nextState.decorations);
-      setHistoryIndex(prev => prev + 1);
-    }
-  }, [changeHistory, historyIndex]);
-
-  const addChangeButtons = useCallback(() => {
-    if (editorRef.current && monacoRef.current) {
-      console.log('Adding change buttons');
-      const editor = editorRef.current;
-      const monaco = monacoRef.current;
-
-      // Remove existing content widgets
-      editor.getModel().getAllDecorations().forEach(decoration => {
-        if (decoration.options.beforeContentClassName === 'change-button-widget') {
-          editor.deltaDecorations([decoration.id], []);
-        }
-      });
-
-      diff.forEach(change => {
-        if (change.type.includes('insert_delete') || change.type.includes('char_insert_delete')) {
-          if (!change.decoration || !change.decoration.range) {
-            console.warn('Change has no valid decoration or range:', change);
-            return;
-          }
-
-          const createWidget = (id) => ({
-            getId: () => `change-${id}`,
-            getDomNode: () => {
-              const container = document.createElement('div');
-              container.style.position = 'absolute';
-              container.style.right = '0';
-              container.style.top = '0';
-              container.style.zIndex = '1000';
-              container.style.display = 'flex';
-              container.style.flexDirection = 'row';
-              container.style.alignItems = 'center';
-              container.style.whiteSpace = 'nowrap';
-
-              const createButton = (text, onClick, color) => {
-                const button = document.createElement('button');
-                button.innerText = text;
-                button.onclick = (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onClick();
-                };
-                button.style.fontSize = '12px';
-                button.style.padding = '2px 4px';
-                button.style.marginLeft = '2px';
-                button.style.backgroundColor = theme.backgroundColor;
-                button.style.color = color;
-                button.style.border = `1px solid ${color}`;
-                button.style.cursor = 'pointer';
-                button.style.borderRadius = '3px';
-                return button;
-              };
-
-              const acceptButton = createButton('✓', () => handleAcceptChange(change.decoration.id), '#4CAF50');
-              const rejectButton = createButton('✗', () => handleRejectChange(change.decoration.id), '#F44336');
-
-              container.appendChild(acceptButton);
-              container.appendChild(rejectButton);
-
-              return container;
-            },
-            getPosition: () => ({
-              position: {
-                lineNumber: change.decoration.range.startLineNumber,
-                column: editor.getModel().getLineMaxColumn(change.decoration.range.startLineNumber)
-              },
-              preference: [monaco.editor.ContentWidgetPositionPreference.ABOVE_RIGHT]
-            })
-          });
-  
-          editor.addContentWidget(createWidget(change.decoration.id));
-          console.log('Added content widget for change:', change.id);
-        }
-      });
-    }
-  }, [diff, theme, handleAcceptChange, handleRejectChange]);
-  
   useEffect(() => {
-    if (editorRef.current && monacoRef.current && decorations.length > 0) {
+    if (editorRef.current && monacoRef.current && decorations && decorations.length > 0) {
       const model = editorRef.current.getModel();
       if (model) {
+        // Remove existing decorations
+        const oldDecorations = model.getAllDecorations();
+        editorRef.current.deltaDecorations(
+          oldDecorations.map((d) => d.id),
+          []
+        );
+
+        // Add new decorations
         const newDecorations = editorRef.current.deltaDecorations(
           [],
-          decorations.map(d => ({
+          decorations.map((d) => ({
             range: d.range,
-            options: d.options
+            options: d.options,
           }))
         );
 
@@ -312,36 +204,184 @@ const MonacoEditor = ({ value, language, onChange, readOnly = false, isExecutabl
         return () => {
           if (editorRef.current) {
             editorRef.current.deltaDecorations(newDecorations, []);
-            const contentWidgets = editorRef.current.getContribution('editor.contrib.contentWidgets');
-            if (contentWidgets) {
-              contentWidgets.saveViewState();
-              contentWidgets.dispose();
-            }
+            // Remove content widgets
+            widgetsRef.current.forEach((widget) => {
+              editorRef.current.removeContentWidget(widget);
+            });
+            widgetsRef.current = [];
           }
         };
       }
     }
-  }, [decorations, addChangeButtons]);
+  }, [decorations]);
 
-  const handleEditorDidMount = useCallback((editor, monaco) => {
-    editorRef.current = editor;
-    monacoRef.current = monaco;
-
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_Z, () => handleUndo());
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KEY_Z, () => handleRedo());
-
-    if (monaco) {
-      defineMonacoTheme(monaco);
-      monaco.editor.setTheme('one-monokai');
+  const handleExecute = useCallback(async () => {
+    if (isExecutable) {
+      setIsLoading(true);
+      try {
+        const fileContent = reconstructFileContent();
+        const response = await executeBlock(fileContent, messageTimestamp);
+        if (response.status === 'success' && response.diff) {
+          console.log(response.diff)
+          const newDiff = parseDiff(response.diff);
+          setDiff(newDiff);
+          const { content, decorations: newDecorations } = renderContentFromDiff(
+            newDiff,
+            monacoRef.current
+          );
+          setEditorValue(content);
+          setDecorations(newDecorations);
+          setChangeHistory((prev) => [...prev, newDiff]);
+          setHistoryIndex((prev) => prev + 1);
+        }
+        setExecuteCount((prev) => prev + 1);
+      } catch (error) {
+        console.error('Error executing block:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
+  }, [isExecutable, messageTimestamp, executeBlock, reconstructFileContent]);
 
-    const initialDiff = parseDiff([['equal', value || '', '']]);
-    const { content, decorations } = renderContentFromDiff(initialDiff, monaco);
-    setEditorValue(content);
-    setDecorations(decorations);
+  const handleAcceptChange = useCallback(
+    (changeId) => {
+      setDiff((prevDiff) => {
+        const updatedDiff = prevDiff.map((d) =>
+          d.id === changeId
+            ? {
+                ...d,
+                type: 'equal',
+                equalContent: d.equalContent + d.insertContent,
+                insertContent: '',
+                deleteContent: '',
+                decoration: null,
+              }
+            : d
+        );
+        const { content, decorations: newDecorations } = renderContentFromDiff(
+          updatedDiff,
+          monacoRef.current
+        );
+        setEditorValue(content);
+        setDecorations(newDecorations);
+        setChangeHistory((prev) => [...prev.slice(0, historyIndex + 1), updatedDiff]);
+        setHistoryIndex((prev) => prev + 1);
+        if (onChange) {
+          onChange(content);
+        }
+        if (editorRef.current) {
+          editorRef.current.setValue(content);
+        }
+        return updatedDiff;
+      });
+    },
+    [onChange, historyIndex]
+  );
 
-    addChangeButtons();
-  }, [handleUndo, handleRedo, value, addChangeButtons]);
+  const handleRejectChange = useCallback(
+    (changeId) => {
+      setDiff((prevDiff) => {
+        const updatedDiff = prevDiff.map((d) =>
+          d.id === changeId
+            ? {
+                ...d,
+                type: 'equal',
+                equalContent: d.equalContent + d.deleteContent,
+                insertContent: '',
+                deleteContent: '',
+                decoration: null,
+              }
+            : d
+        );
+        const { content, decorations: newDecorations } = renderContentFromDiff(
+          updatedDiff,
+          monacoRef.current
+        );
+        setEditorValue(content);
+        setDecorations(newDecorations);
+        setChangeHistory((prev) => [...prev.slice(0, historyIndex + 1), updatedDiff]);
+        setHistoryIndex((prev) => prev + 1);
+        if (onChange) {
+          onChange(content);
+        }
+        if (editorRef.current) {
+          editorRef.current.setValue(content);
+        }
+        return updatedDiff;
+      });
+    },
+    [onChange, historyIndex]
+  );
+
+  const addChangeButtons = useCallback(() => {
+    if (!editorRef.current || !monacoRef.current) return;
+    
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+
+    // Remove existing content widgets
+    widgetsRef.current.forEach((widget) => {
+      editor.removeContentWidget(widget);
+    });
+    widgetsRef.current = [];
+
+    diff.forEach((change) => {
+      const { id, decoration } = change;
+      if (decoration) {
+        const widget = {
+          getId: () => `change-${id}`,
+          getDomNode: () => {
+            const container = document.createElement('div');
+            container.style.position = 'absolute';
+            container.style.right = '0';
+            container.style.top = '0';
+            container.style.zIndex = '1000';
+            container.style.display = 'flex';
+            container.style.flexDirection = 'row';
+            container.style.alignItems = 'center';
+            container.style.whiteSpace = 'nowrap';
+
+            const createButton = (text, onClick, color) => {
+              const button = document.createElement('button');
+              button.innerText = text;
+              button.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClick();
+              };
+              button.style.fontSize = '12px';
+              button.style.padding = '2px 4px';
+              button.style.marginLeft = '2px';
+              button.style.backgroundColor = theme.backgroundColor;
+              button.style.color = color;
+              button.style.border = `1px solid ${color}`;
+              button.style.cursor = 'pointer';
+              button.style.borderRadius = '3px';
+              return button;
+            };
+
+            const acceptButton = createButton('✓', () => handleAcceptChange(id), '#4CAF50');
+            const rejectButton = createButton('✗', () => handleRejectChange(id), '#F44336');
+
+            container.appendChild(acceptButton);
+            container.appendChild(rejectButton);
+
+            return container;
+          },
+          getPosition: () => ({
+            position: {
+              lineNumber: decoration.range.startLineNumber,
+              column: editor.getModel().getLineMaxColumn(decoration.range.startLineNumber),
+            },
+            preference: [monaco.editor.ContentWidgetPositionPreference.ABOVE_RIGHT],
+          }),
+        };
+
+        editor.addContentWidget(widget);
+        widgetsRef.current.push(widget);
+      }
+    });
+  }, [diff, theme, handleAcceptChange, handleRejectChange]);
 
   const editorOptions = {
     readOnly: readOnly,
@@ -360,23 +400,25 @@ const MonacoEditor = ({ value, language, onChange, readOnly = false, isExecutabl
       verticalScrollbarSize: 12,
       horizontalScrollbarSize: 12,
       useShadows: false,
-      alwaysConsumeMouseWheel: false
+      alwaysConsumeMouseWheel: false,
     },
     automaticLayout: true,
     glyphMargin: false,
-    ...(isExecutable ? {
-      contextmenu: false,
-      extraEditorClassName: 'executable-code',
-      actions: [
-        {
-          id: 'execute-code',
-          label: 'Execute Code',
-          keybindings: [],
-          run: handleExecute
+    ...(isExecutable
+      ? {
+          contextmenu: false,
+          extraEditorClassName: 'executable-code',
+          actions: [
+            {
+              id: 'execute-code',
+              label: 'Execute Code',
+              keybindings: [],
+              run: handleExecute,
+            },
+          ],
         }
-      ]
-    } : {})
-  }
+      : {}),
+  };
 
   const handleSave = useCallback(() => {
     saveFile(filename, editorValue);
@@ -390,6 +432,8 @@ const MonacoEditor = ({ value, language, onChange, readOnly = false, isExecutabl
         onSave={handleSave}
         onUndo={handleUndo}
         onRedo={handleRedo}
+        canUndo={historyIndex > 0}
+        canRedo={historyIndex < changeHistory.length - 1}
       />
       <EditorWrapper>
         {isExecutable && (

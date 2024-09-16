@@ -26,15 +26,17 @@ const HeaderButton = styled(Button)`
   padding: 4px 8px;
   border: 1px solid ${props => props.theme.buttonBorderColor};
   font-size: inherit;
+  opacity: ${props => props.disabled ? 0.5 : 1};
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
 `;
 
-const MonacoEditorHeader = ({ filename, onCopy, onSave, onUndo, onRedo }) => {
+const MonacoEditorHeader = ({ filename, onCopy, onSave, onUndo, onRedo, canUndo, canRedo }) => {
   return (
     <HeaderContainer>
       <Filename>{filename}</Filename>
       <ButtonGroup>
-        <HeaderButton onClick={onUndo} title="Undo">↩️</HeaderButton>
-        <HeaderButton onClick={onRedo} title="Redo">↪️</HeaderButton>
+        <HeaderButton onClick={onUndo} disabled={!canUndo} title="Undo">↩️</HeaderButton>
+        <HeaderButton onClick={onRedo} disabled={!canRedo} title="Redo">↪️</HeaderButton>
         <HeaderButton onClick={onSave}>Save</HeaderButton>
         <HeaderButton onClick={onCopy}>Copy</HeaderButton>
       </ButtonGroup>
