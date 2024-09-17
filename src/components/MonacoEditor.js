@@ -131,10 +131,33 @@ const MonacoEditor = ({
         monaco.editor.setTheme('one-monokai');
       }
 
+      // Add listener for detailed content changes
+      editor.onDidChangeModelContent((event) => {
+        handleDetailedChange(event.changes);
+      });
+
       setIsEditorReady(true);
     },
     [handleUndo, handleRedo]
   );
+
+  const handleDetailedChange = useCallback((changes) => {
+    setDiff((prevDiff) => {
+      const updatedDiff = updateDiffFromEdit(prevDiff, changes);
+      const { content, decorations: newDecorations } = renderContentFromDiff(
+        updatedDiff,
+        monacoRef.current
+      );
+      setEditorValue(content);
+      setDecorations(newDecorations);
+      setChangeHistory((prev) => [...prev.slice(0, historyIndex + 1), updatedDiff]);
+      setHistoryIndex((prev) => prev + 1);
+      if (onChange) {
+        onChange(content);
+      }
+      return updatedDiff;
+    });
+  }, [onChange, historyIndex]);
 
   useEffect(() => {
     if (!monacoRef.current || !isEditorReady) return;
@@ -154,7 +177,7 @@ const MonacoEditor = ({
   useEffect(() => {
     let detectedFilename = 'Untitled';
 
-    if (typeof editorValue === 'string' && editorValue.startsWith('meld ')) {
+    if (editorValue.startsWith('meld ')) {
       const match = editorValue.match(/meld\s+(\S+)/);
       if (match) {
         detectedFilename = match[1];
@@ -171,29 +194,6 @@ const MonacoEditor = ({
   const reconstructFileContent = useCallback(() => {
     return diff.map((change) => change.equalContent + change.insertContent).join('');
   }, [diff]);
-
-  const handleChange = useCallback(
-    (newValue) => {
-      if (!isEditorReady || !editorRef.current) return;
-  
-      const updatedDiff = updateDiffFromEdit(diff, newValue);
-      setDiff(updatedDiff);
-  
-      const { content, decorations: newDecorations } = renderContentFromDiff(
-        updatedDiff,
-        monacoRef.current
-      );
-      setEditorValue(content);
-      setDecorations(newDecorations);
-      setChangeHistory((prev) => [...prev.slice(0, historyIndex + 1), updatedDiff]);
-      setHistoryIndex((prev) => prev + 1);
-  
-      if (onChange) {
-        onChange(content);
-      }
-    },
-    [diff, onChange, historyIndex, isEditorReady]
-  );
 
   useEffect(() => {
     if (editorRef.current && monacoRef.current && decorations && decorations.length > 0) {
@@ -471,7 +471,6 @@ const MonacoEditor = ({
           height="600px"
           language={editorLanguage}
           value={editorValue}
-          onChange={handleChange}
           onMount={handleEditorDidMount}
           options={editorOptions}
         />

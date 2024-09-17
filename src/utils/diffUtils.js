@@ -98,133 +98,53 @@ export function renderContentFromDiff(diff, monaco) {
   return { content, decorations };
 }
 
-const compareContent = (content, newContent, startIndex) => {
-  for (let i = 0; i < content.length; i++) {
-    if (content[i] !== newContent[startIndex + i]) {
-      return { match: false, position: i };
-    }
-  }
-  return { match: true, position: content.length };
-};
 
-const compareContentBackward = (content, newContent, endIndex) => {
-  for (let i = content.length - 1, j = endIndex; i >= 0; i--, j--) {
-    if (content[i] !== newContent[j]) {
-      return { match: false, position: i };
-    }
-  }
-  return { match: true, position: -1 };
-};
+export function updateDiffFromEdit(oldDiffs, changes) {
+  let newDiffs = [];
+  let changeIndex = 0;
+  let currentOffset = 0;
 
-const updateDiffFromEdit = (oldDiffs, newContent) => {
-  const newDiffs = [];
-  let newContentIndex = 0;
-  let forwardIndex = 0;
-  let backwardIndex = oldDiffs.length - 1;
-  let forwardState = null;
-  let forwardPosition = 0;
-  let backwardState = null;
-  let backwardPosition = 0;
+  for (let i = 0; i < oldDiffs.length && changeIndex < changes.length; i++) {
+    let diff = oldDiffs[i];
+    let diffLength = diff.equalContent.length + diff.insertContent.length + diff.deleteContent.length;
 
-  // Forward pass
-  for (let i = 0; i < oldDiffs.length; i++) {
-    const diff = oldDiffs[i];
-    let matchFound = true;
+    while (changeIndex < changes.length && changes[changeIndex].rangeOffset < currentOffset + diffLength) {
+      const change = changes[changeIndex];
+      const localOffset = change.rangeOffset - currentOffset;
+      const endOffset = Math.min(localOffset + change.rangeLength, diffLength);
 
-    for (const state of ['equalContent', 'insertContent', 'deleteContent']) {
-      if (diff[state]) {
-        const result = compareContent(diff[state], newContent, newContentIndex);
-        if (result.match) {
-        } else {
-          matchFound = false;
-          forwardState = state;
-          forwardPosition = result.position;
-          forwardIndex = i;
-          break;
-        }
+      if (localOffset < diff.equalContent.length) {
+        diff.equalContent = applyChange(diff.equalContent, localOffset, endOffset, change.text);
+      } else if (localOffset < diff.equalContent.length + diff.insertContent.length) {
+        const insertOffset = localOffset - diff.equalContent.length;
+        diff.insertContent = applyChange(diff.insertContent, insertOffset, endOffset - diff.equalContent.length, change.text);
+      } else {
+        const deleteOffset = localOffset - diff.equalContent.length - diff.insertContent.length;
+        diff.deleteContent = applyChange(diff.deleteContent, deleteOffset, endOffset - diff.equalContent.length - diff.insertContent.length, '');
       }
+
+      changeIndex++;
+      diffLength += change.text.length - (endOffset - localOffset);
     }
 
-    if (matchFound) {
-      newDiffs.push(diff);
-    } else {
-      break;
-    }
+    currentOffset += diffLength;
   }
 
-  // Backward pass
-  let backwardContentIndex = newContent.length - 1;
-  for (let i = oldDiffs.length - 1; i >= forwardIndex; i--) {
-    const diff = oldDiffs[i];
-    let matchFound = true;
-
-    for (const state of ['equalContent', 'insertContent', 'deleteContent']) {
-      if (diff[state]) {
-        const result = compareContentBackward(diff[state], newContent, backwardContentIndex);
-        if (result.match) {
-        } else {
-          matchFound = false;
-          backwardState = state;
-          backwardPosition = result.position;
-          backwardIndex = i;
-          break;
-        }
-      }
-    }
-
-    if (!matchFound) break;
+  // Apply any remaining changes
+  while (changeIndex < changes.length) {
+    oldDiffs.push({
+      equalContent: changes[changeIndex].text,
+      insertContent: '',
+      deleteContent: '',
+      type: 'equal'
+    });
+    changeIndex++;
   }
 
-  // Handle the modified section
-  const new_part = newContent.slice(newContentIndex, backwardContentIndex + 1)
-  const equalCont  = oldDiffs[forwardIndex].equalContent
-  const insertCont = oldDiffs[forwardIndex].insertContent
-  const deleteCont = oldDiffs[forwardIndex].deleteContent
-  const fstate = (forwardState   ==='equalContent' ? 1 : (forwardState  ==='insertContent' ? 2 : 3))
-  const bstate = (backwardState  ==='equalContent' ? 1 : (backwardState  ==='insertContent' ? 2 : 3))
-  let lastDiff = null;
-  if (forwardIndex === backwardIndex) {
-    newDiffs.push({
-        ...oldDiffs[forwardIndex],
-        equalContent:  (fstate === 1 ? equalCont.slice(0,forwardPosition)                   : equalCont) + 
-                      (fstate === 1 ? new_part : '') + 
-                      (1 === bstate ? equalCont.slice(backwardPosition,equalCont.length-1) : ''),
-        insertContent: (fstate === 2 ? insertCont.slice(0,forwardPosition) : fstate === 3 ? insertCont : '') + 
-                      (fstate === 2 ? new_part : '') + 
-                      (2 === bstate ? insertCont.slice(backwardPosition,insertCont.length-1) : 1 === bstate ? insertCont : ''),
-        deleteContent: (fstate === 3 ? deleteCont.slice(0,forwardPosition) : '') + 
-                      (fstate === 3 ? new_part : '') +  
-                      (3 === bstate ? deleteCont.slice(backwardPosition,deleteCont.length-1) : deleteCont),
-    });
-    lastDiff = newDiffs[newDiffs.length - 1];
-    !lastDiff.equalContent && !lastDiff.insertContent && !lastDiff.deleteContent && newDiffs.pop();
-  } else if (forwardIndex < backwardIndex) {
-    newDiffs.push({
-      ...oldDiffs[forwardIndex],
-      equalContent:  (fstate  ===1 ? equalCont.slice( 0,forwardPosition) : equalCont)  + new_part,
-      insertContent: (fstate  ===2 ? insertCont.slice(0,forwardPosition) : fstate === 3 ? insertCont : '') + new_part,
-      deleteContent: (fstate  ===3 ? deleteCont.slice(0,forwardPosition) : '') + new_part,
-    });
-    lastDiff = newDiffs[newDiffs.length - 1];
-    !lastDiff.equalContent && !lastDiff.insertContent && !lastDiff.deleteContent && newDiffs.pop();
-    const bequalCont  = oldDiffs[backwardIndex].equalContent
-    const binsertCont = oldDiffs[backwardIndex].insertContent
-    const bdeleteCont = oldDiffs[backwardIndex].deleteContent
-    newDiffs.push({
-        ...oldDiffs[backwardIndex],
-        equalContent: (bstate === 1 ? bequalCont.slice( backwardPosition,bequalCont.length-1) : ''),
-        insertContent:(bstate === 2 ? binsertCont.slice(backwardPosition,binsertCont.length-1) : 1 === bstate ? binsertCont : ''),
-        deleteContent:(bstate === 3 ? bdeleteCont.slice(backwardPosition,bdeleteCont.length-1) : bdeleteCont),
-    });
-    lastDiff = newDiffs[newDiffs.length - 1];
-    !lastDiff.equalContent && !lastDiff.insertContent && !lastDiff.deleteContent && newDiffs.pop();
+  // Remove any empty diff parts
+  return oldDiffs.filter(diff => diff.equalContent || diff.insertContent || diff.deleteContent);
+}
 
-  }
-
-  // Add remaining diffs
-  newDiffs.push(...oldDiffs.slice(backwardIndex + 1));
-
-  return newDiffs;
-};
-
-export { updateDiffFromEdit };
+function applyChange(content, start, end, newText) {
+  return content.slice(0, start) + newText + content.slice(end);
+}

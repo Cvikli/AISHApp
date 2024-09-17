@@ -4,7 +4,7 @@
 open_terminal_and_run() {
     local title="$1"
     local command="$2"
-    gnome-terminal --title="$title" -- bash -c "$command; exec bash"
+    gnome-terminal --title="$title" -- zsh -c "$command; exec bash"
 }
 
 # Start the Julia server in a new terminal
