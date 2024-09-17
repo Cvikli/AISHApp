@@ -100,33 +100,30 @@ export function renderContentFromDiff(diff, monaco) {
 
 
 export function updateDiffFromEdit(oldDiffs, changes) {
-  let newDiffs = [];
   let changeIndex = 0;
   let currentOffset = 0;
 
   for (let i = 0; i < oldDiffs.length && changeIndex < changes.length; i++) {
     let diff = oldDiffs[i];
-    let diffLength = diff.equalContent.length + diff.insertContent.length + diff.deleteContent.length;
+    const eqlen=diff.equalContent.length
+    const inlen=diff.insertContent.length
+    const delen=diff.deleteContent.length
+    let diffLength = eqlen + inlen + delen;
+
+    let multisameoffset = 0;
 
     while (changeIndex < changes.length && changes[changeIndex].rangeOffset < currentOffset + diffLength) {
       const change = changes[changeIndex];
-      const localOffset = change.rangeOffset - currentOffset;
-      const endOffset = Math.min(localOffset + change.rangeLength, diffLength);
-
-      if (localOffset < diff.equalContent.length) {
-        diff.equalContent = applyChange(diff.equalContent, localOffset, endOffset, change.text);
-      } else if (localOffset < diff.equalContent.length + diff.insertContent.length) {
-        const insertOffset = localOffset - diff.equalContent.length;
-        diff.insertContent = applyChange(diff.insertContent, insertOffset, endOffset - diff.equalContent.length, change.text);
-      } else {
-        const deleteOffset = localOffset - diff.equalContent.length - diff.insertContent.length;
-        diff.deleteContent = applyChange(diff.deleteContent, deleteOffset, endOffset - diff.equalContent.length - diff.insertContent.length, '');
-      }
+      let localOffset = change.rangeOffset - currentOffset;
+      if (localOffset < eqlen) diff.equalContent  = applyChange(diff.equalContent,  localOffset  + multisameoffset, change.text);
+      localOffset -= eqlen
+      if (localOffset < inlen) diff.insertContent = applyChange(diff.insertContent, localOffset + multisameoffset, change.text);
+      localOffset -= inlen
+      if (localOffset < delen) diff.deleteContent = applyChange(diff.deleteContent, localOffset + multisameoffset, change.text);
 
       changeIndex++;
-      diffLength += change.text.length - (endOffset - localOffset);
+      multisameoffset += change.text.length
     }
-
     currentOffset += diffLength;
   }
 
@@ -145,6 +142,6 @@ export function updateDiffFromEdit(oldDiffs, changes) {
   return oldDiffs.filter(diff => diff.equalContent || diff.insertContent || diff.deleteContent);
 }
 
-function applyChange(content, start, end, newText) {
-  return content.slice(0, start) + newText + content.slice(end);
+function applyChange(content, start, newText) {
+  return content.slice(0, start) + newText + content.slice(start+1);
 }

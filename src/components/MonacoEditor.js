@@ -79,6 +79,10 @@ const MonacoEditor = ({
   const widgetsRef = useRef([]);
   const [isEditorReady, setIsEditorReady] = useState(false);
 
+  const reconstructFileContent = useCallback(() => {
+    return diff.map((change) => change.equalContent + change.insertContent).join('');
+  }, [diff]);
+
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
       const prevDiff = changeHistory[historyIndex - 1];
@@ -113,35 +117,8 @@ const MonacoEditor = ({
     }
   }, [changeHistory, historyIndex]);
 
-  const handleEditorDidMount = useCallback(
-    (editor, monaco) => {
-      if (!editor || !monaco) return;
-
-      editorRef.current = editor;
-      monacoRef.current = monaco;
-
-      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_Z, () => handleUndo());
-      editor.addCommand(
-        monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KEY_Z,
-        () => handleRedo()
-      );
-
-      if (monaco) {
-        defineMonacoTheme(monaco);
-        monaco.editor.setTheme('one-monokai');
-      }
-
-      // Add listener for detailed content changes
-      editor.onDidChangeModelContent((event) => {
-        handleDetailedChange(event.changes);
-      });
-
-      setIsEditorReady(true);
-    },
-    [handleUndo, handleRedo]
-  );
-
   const handleDetailedChange = useCallback((changes) => {
+    console.log(changes)
     setDiff((prevDiff) => {
       const updatedDiff = updateDiffFromEdit(prevDiff, changes);
       const { content, decorations: newDecorations } = renderContentFromDiff(
@@ -152,12 +129,32 @@ const MonacoEditor = ({
       setDecorations(newDecorations);
       setChangeHistory((prev) => [...prev.slice(0, historyIndex + 1), updatedDiff]);
       setHistoryIndex((prev) => prev + 1);
-      if (onChange) {
-        onChange(content);
-      }
       return updatedDiff;
     });
-  }, [onChange, historyIndex]);
+  }, [historyIndex]);
+
+  const handleEditorDidMount = useCallback(
+    (editor, monaco) => {
+      if (!editor || !monaco) return;
+
+      editorRef.current = editor;
+      monacoRef.current = monaco;
+
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KEY_Z, handleUndo);
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KEY_Z, handleRedo);
+
+      defineMonacoTheme(monaco);
+      monaco.editor.setTheme('one-monokai');
+
+      // Add listener for detailed content changes
+      editor.onDidChangeModelContent((event) => {
+        handleDetailedChange(event.changes);
+      });
+
+      setIsEditorReady(true);
+    },
+    [handleUndo, handleRedo, handleDetailedChange]
+  );
 
   useEffect(() => {
     if (!monacoRef.current || !isEditorReady) return;
@@ -190,10 +187,6 @@ const MonacoEditor = ({
 
     setFilename(detectedFilename);
   }, [editorValue, language]);
-
-  const reconstructFileContent = useCallback(() => {
-    return diff.map((change) => change.equalContent + change.insertContent).join('');
-  }, [diff]);
 
   useEffect(() => {
     if (editorRef.current && monacoRef.current && decorations && decorations.length > 0) {
@@ -282,16 +275,13 @@ const MonacoEditor = ({
         setDecorations(newDecorations);
         setChangeHistory((prev) => [...prev.slice(0, historyIndex + 1), updatedDiff]);
         setHistoryIndex((prev) => prev + 1);
-        if (onChange) {
-          onChange(content);
-        }
         if (editorRef.current) {
           editorRef.current.setValue(content);
         }
         return updatedDiff;
       });
     },
-    [onChange, historyIndex]
+    [historyIndex]
   );
 
   const handleRejectChange = useCallback(
@@ -317,16 +307,13 @@ const MonacoEditor = ({
         setDecorations(newDecorations);
         setChangeHistory((prev) => [...prev.slice(0, historyIndex + 1), updatedDiff]);
         setHistoryIndex((prev) => prev + 1);
-        if (onChange) {
-          onChange(content);
-        }
         if (editorRef.current) {
           editorRef.current.setValue(content);
         }
         return updatedDiff;
       });
     },
-    [onChange, historyIndex]
+    [historyIndex]
   );
 
   const addChangeButtons = useCallback(() => {

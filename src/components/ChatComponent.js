@@ -24,18 +24,18 @@ const JumpToBottomButton = styled(Button)`
   justify-content: center;
   align-items: center;
   font-size: 24px;
-  background-color: #1270ff;  // Kék háttérszín
-  color: white;  // Fehér ikon szín
+  background-color: #1270ff;
+  color: white;
   border: none;
   cursor: pointer;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   
   &:hover {
-    background-color: #0056b3;  // Sötétebb kék hover állapotban
+    background-color: #0056b3;
   }
 
   &:active {
-    background-color: #003d82;  // Még sötétebb kék kattintáskor
+    background-color: #003d82;
   }
 `;
 
@@ -157,7 +157,7 @@ const ChatComponent = () => {
           },
           (inMeta) => {
 
-            delMessage(conversationId, user_msg_id)
+            delMessage(conversationId, user_msg_id);
             addMessage(conversationId, {
               role: 'user',
               content: trimmedInput,
