@@ -52,6 +52,7 @@ apt install byobu
 
 
 ## TODO
+- [ ] copy icon button
 - [ ] rerender bugs
 - [ ] height hugging monaco
 - [ ] live edit monaco
