@@ -1,6 +1,4 @@
 // diffUtils.js
-import { diffChars } from 'diff';
-
 export function parseDiff(diffArray) {
   let changeId = 0;
   return diffArray.map(([type, equalContent, insertContent, deleteContent]) => {
@@ -17,8 +15,8 @@ export function parseDiff(diffArray) {
       id: changeId++,
       type,
       equalContent,
-      insertContent,
       deleteContent,
+      insertContent,
       decoration,
     };
   });
@@ -30,7 +28,7 @@ export function renderContentFromDiff(diff, monaco) {
   let line = 1;
   let column = 1;
 
-  diff.forEach(({ id, type, equalContent, insertContent, deleteContent, decoration }) => {
+  diff.forEach(({ id, type, equalContent, deleteContent, insertContent, decoration }) => {
     const isWholeLine = !type.startsWith('char_');
 
     // Handle equal content
@@ -41,37 +39,16 @@ export function renderContentFromDiff(diff, monaco) {
       column = lines[lines.length - 1].length + 1;
     }
 
-    const startLineNumber = line;
-    const startColumn = column;
-
-    // Handle insertions
-    if (insertContent.length > 0) {
-      const lines = insertContent.split('\n');
-      content += insertContent;
-      line += lines.length - 1;
-      column = lines[lines.length - 1].length + 1;
-
-      const insertClass = (type.startsWith('char_') ? 'char_' : '') + 'insert-background';
-      decorations.push({
-        range: new monaco.Range(startLineNumber, startColumn, line - 1, column),
-        options: {
-          isWholeLine: isWholeLine,
-          className: insertClass,
-          hoverMessage: { value: `Inserted: ${insertContent}` },
-        },
-        id: id,
-      });
-    }
+    const deleteStartLine = line;
+    const deleteStartColumn = column;
 
     // Handle deletions
     if (deleteContent.length > 0) {
       const deleteLines = deleteContent.split('\n');
       content += deleteContent;
-      const deleteStartLine = line;
-      const deleteStartColumn = column;
 
       line += deleteLines.length - 1;
-      column = deleteLines[deleteLines.length - 1].length;
+      column = deleteLines[deleteLines.length - 1].length + 1;
 
       const deleteClass = (type.startsWith('char_') ? 'char_' : '') + 'delete-background';
 
@@ -82,22 +59,41 @@ export function renderContentFromDiff(diff, monaco) {
           className: deleteClass,
           hoverMessage: { value: `Deleted: ${deleteContent}` },
         },
-        id: id + 100000,
+        id: id,
       });
 
       // Do not update `line` and `column` since deletions are not added to the content
     }
 
+    // Handle insertions
+    if (insertContent.length > 0) {
+      const insrtlines = insertContent.split('\n');
+      const startLineNumber = line;
+      const startColumn = column;
+      content += insertContent;
+      line += insrtlines.length - 1;
+      column = insrtlines[insrtlines.length - 1].length + 1;
+
+      const insertClass = (type.startsWith('char_') ? 'char_' : '') + 'insert-background';
+      decorations.push({
+        range: new monaco.Range(startLineNumber, startColumn, line - 1, column),
+        options: {
+          isWholeLine: isWholeLine,
+          className: insertClass,
+          hoverMessage: { value: `Inserted: ${insertContent}` },
+        },
+        id: id + 100000,
+      });
+    }
+
     // Update decoration range
     if (decoration) {
       decoration.id = id;
-      decoration.range = new monaco.Range(startLineNumber, startColumn, line, column);
+      decoration.range = new monaco.Range(deleteStartLine, deleteStartColumn, line, column);
     }
   });
-
   return { content, decorations };
 }
-
 
 export function updateDiffFromEdit(oldDiffs, changes) {
   let changeIndex = 0;
@@ -105,24 +101,32 @@ export function updateDiffFromEdit(oldDiffs, changes) {
 
   for (let i = 0; i < oldDiffs.length && changeIndex < changes.length; i++) {
     let diff = oldDiffs[i];
-    const eqlen=diff.equalContent.length
-    const inlen=diff.insertContent.length
-    const delen=diff.deleteContent.length
-    let diffLength = eqlen + inlen + delen;
+    const eqlen = diff.equalContent.length;
+    const delen = diff.deleteContent.length;
+    const inlen = diff.insertContent.length;
+    let diffLength = eqlen + delen + inlen;
 
     let multisameoffset = 0;
 
     while (changeIndex < changes.length && changes[changeIndex].rangeOffset < currentOffset + diffLength) {
       const change = changes[changeIndex];
       let localOffset = change.rangeOffset - currentOffset;
-      if (localOffset < eqlen) diff.equalContent  = applyChange(diff.equalContent,  localOffset  + multisameoffset, change.text);
-      localOffset -= eqlen
-      if (localOffset < inlen) diff.insertContent = applyChange(diff.insertContent, localOffset + multisameoffset, change.text);
-      localOffset -= inlen
-      if (localOffset < delen) diff.deleteContent = applyChange(diff.deleteContent, localOffset + multisameoffset, change.text);
+      const rangeLength = change.rangeLength || 0;
+
+      if (0 <= localOffset < eqlen) {
+        diff.equalContent = applyChange(diff.equalContent, localOffset + multisameoffset, change.text, rangeLength);
+      }
+      localOffset -= eqlen;
+      if (0 <= localOffset < delen) {
+        diff.deleteContent = applyChange(diff.deleteContent, localOffset + multisameoffset, change.text, rangeLength);
+      }
+      localOffset -= delen;
+      if (0 <= localOffset < inlen) {
+        diff.insertContent = applyChange(diff.insertContent, localOffset + multisameoffset, change.text, rangeLength);
+      }
 
       changeIndex++;
-      multisameoffset += change.text.length
+      multisameoffset += change.text.length - rangeLength;
     }
     currentOffset += diffLength;
   }
@@ -131,17 +135,22 @@ export function updateDiffFromEdit(oldDiffs, changes) {
   while (changeIndex < changes.length) {
     oldDiffs.push({
       equalContent: changes[changeIndex].text,
-      insertContent: '',
       deleteContent: '',
+      insertContent: '',
       type: 'equal'
     });
     changeIndex++;
   }
 
   // Remove any empty diff parts
-  return oldDiffs.filter(diff => diff.equalContent || diff.insertContent || diff.deleteContent);
+  return oldDiffs.filter(diff => diff.equalContent || diff.deleteContent || diff.insertContent);
 }
 
-function applyChange(content, start, newText) {
-  return content.slice(0, start) + newText + content.slice(start+1);
+function applyChange(content, start, newText, rangeLength) {
+  // Remove the specified range
+  const beforeDeletion = content.slice(0, start);
+  const afterDeletion = content.slice(start + rangeLength);
+  
+  // Insert the new text
+  return beforeDeletion + newText + afterDeletion;
 }

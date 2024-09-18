@@ -56,3 +56,22 @@ export const getLanguageFromExtension = (extension) => {
   };
   return languageMap[extension] || 'plaintext';
 };
+
+export const getLanguageFromCommand = (command) => {
+  if (command.startsWith('meld ')) {
+    const match = command.match(/meld\s+(\S+)/);
+    if (match) {
+      const filename = match[1];
+      const extension = filename.split('.').pop().toLowerCase();
+      return getLanguageFromExtension(extension);
+    }
+  } else if (command.startsWith('cat ')) {
+    const match = command.match(/cat\s+>\s+(\S+)/);
+    if (match) {
+      const filename = match[1];
+      const extension = filename.split('.').pop().toLowerCase();
+      return getLanguageFromExtension(extension);
+    }
+  }
+  return 'plaintext';
+};
