@@ -83,39 +83,17 @@ const MonacoEditor = ({
     return diff.map((change) => change.equalContent + change.insertContent).join('');
   }, [diff]);
 
-  const handleUndo = useCallback(() => {
-    // if (historyIndex > 0) {
-    //   setDiff(changeHistory[historyIndex - 1]);
-    //   const { content, decorations: newDecorations } = renderContentFromDiff(changeHistory[historyIndex - 1], monacoRef.current);
-    //   setDecorations(newDecorations)
-    //   setHistoryIndex((prev) => prev - 1);
-    // }
-  }, [changeHistory, historyIndex]);
-
-  const handleRedo = useCallback(() => {
-    // if (historyIndex < changeHistory.length - 1) {
-    //   setDiff(changeHistory[historyIndex + 1]);
-    //   const { content, decorations: newDecorations } = renderContentFromDiff(changeHistory[historyIndex + 1], monacoRef.current);
-    //   setDecorations(newDecorations)
-    //   setHistoryIndex((prev) => prev + 1);
-    // }
-  }, [changeHistory, historyIndex]);
-
   const handleDetailedChange = useCallback((value, event) => {
     const changes = event.changes;
     console.log(changes);
     console.log(isInitializing);
     console.log("isInitializing");
     if (isInitializing) return;
-
     setDiff((prevDiff) => {
       const newDiff = updateDiffFromEdit(prevDiff, changes);
-      // setChangeHistory((prev) => [...prev.slice(0, historyIndex + 1), newDiff]);
-      // setHistoryIndex((prev) => prev + 1);
       return newDiff;
     });
-
-  }, [historyIndex, isInitializing]);
+  }, [isInitializing]);
 
   const handleEditorDidMount = useCallback(
     (editor, monaco) => {
@@ -163,7 +141,6 @@ const MonacoEditor = ({
     requestAnimationFrame(() => {
       setIsInitializing(false);
     });
-
   }, [value, isEditorReady]);
 
   useEffect(() => {
@@ -226,8 +203,6 @@ const MonacoEditor = ({
         if (response.status === 'success' && response.diff) {
           console.log(response.diff);
           const newDiff = parseDiff(response.diff);
-          console.log(newDiff);
-          console.log("newDiff");
           setDiff(newDiff);
 
           const { content, decorations: newDecorations } = renderContentFromDiff(newDiff, monacoRef.current);
@@ -252,30 +227,13 @@ const MonacoEditor = ({
       const editor = editorRef.current;
       const model = editor.getModel();
       const changeToAccept = diff.find(d => d.id === changeId);
-      if (!changeToAccept) return;
+      if (!changeToAccept || !changeToAccept.decoration) return;
 
-      const text_do_delete_insert = changeToAccept.deleteContent + changeToAccept.insertContent;
-      const fullContent = model.getValue();
-      const startIndex = fullContent.indexOf(text_do_delete_insert);
-      
-      if (startIndex === -1) {
-        console.error('Could not find the change in the editor content', changeId, " ", diff);
-        return;
-      }
-      const startPosition = model.getPositionAt(startIndex);
-      const endPosition = model.getPositionAt(startIndex + text_do_delete_insert.length);
-      const range = new monacoRef.current.Range(
-        startPosition.lineNumber,
-        startPosition.column,
-        endPosition.lineNumber,
-        endPosition.column
-      );
-
+      const range = changeToAccept.decoration.range;
       const newText = changeToAccept.insertContent;
 
-      editor.setPosition(startPosition);
+      editor.setPosition(range.getStartPosition());
 
-      // Use model.applyEdits instead of editor.executeEdits
       model.applyEdits([{
         range: range,
         text: newText,
@@ -308,31 +266,13 @@ const MonacoEditor = ({
       const editor = editorRef.current;
       const model = editor.getModel();
       const changeToReject = diff.find(d => d.id === changeId);
-      if (!changeToReject) return;
+      if (!changeToReject || !changeToReject.decoration) return;
 
-      const text_do_delete_insert = changeToReject.deleteContent + changeToReject.insertContent;
-      const fullContent = model.getValue();
-      const startIndex = fullContent.indexOf(text_do_delete_insert);
-      
-      if (startIndex === -1) {
-        console.error('Could not find the change in the editor content');
-        return;
-      }
-
-      const startPosition = model.getPositionAt(startIndex);
-      const endPosition = model.getPositionAt(startIndex + text_do_delete_insert.length);
-      const range = new monacoRef.current.Range(
-        startPosition.lineNumber,
-        startPosition.column,
-        endPosition.lineNumber,
-        endPosition.column
-      );
-
+      const range = changeToReject.decoration.range;
       const newText = changeToReject.deleteContent;
 
-      editor.setPosition(startPosition);
+      editor.setPosition(range.getStartPosition());
 
-      // Use model.applyEdits instead of editor.executeEdits
       model.applyEdits([{
         range: range,
         text: newText,
@@ -471,6 +411,26 @@ const MonacoEditor = ({
   const handleSave = useCallback(() => {
     // saveFile(filename, editorValue);
   }, [saveFile, filename, editorValue]);
+  
+  const handleUndo = useCallback(() => {
+    if (editorRef.current) {
+      editorRef.current.trigger('keyboard', 'undo', null);
+    }
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    if (editorRef.current) {
+      editorRef.current.trigger('keyboard', 'redo', null);
+    }
+  }, []);
+
+  const canUndo = useCallback(() => {
+    return editorRef.current && editorRef.current.getModel().canUndo();
+  }, []);
+
+  const canRedo = useCallback(() => {
+    return editorRef.current && editorRef.current.getModel().canRedo();
+  }, []);
 
   return (
     <EditorContainer>
@@ -478,10 +438,10 @@ const MonacoEditor = ({
         filename={filename}
         onCopy={() => navigator.clipboard.writeText(editorValue)}
         onSave={handleSave}
-        // onUndo={handleUndo}
-        // onRedo={handleRedo}
-        canUndo={historyIndex > 0}
-        canRedo={historyIndex < changeHistory.length - 1}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={canUndo()}
+        canRedo={canRedo()}
       />
       <EditorWrapper>
         {isExecutable && (
