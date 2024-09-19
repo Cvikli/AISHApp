@@ -82,9 +82,9 @@ export const AppProvider = ({ children }) => {
     saveFile: createApiMethod('save_file', 'post'),
   }), [createApiMethod]);
 
-  const saveFile = useCallback(async (filename, content) => {
+  const saveFile = useCallback(async (filepath, content) => {
     try {
-      const response = await api.saveFile({ filename, content });
+      const response = await api.saveFile({ filepath, content });
       if (response.status === 'success') {
         console.log('File saved successfully');
         // You might want to update some state or show a notification here
@@ -240,12 +240,11 @@ export const AppProvider = ({ children }) => {
     });
   }, []);
 
-  const executeBlock = useCallback(async (code, timestamp) => { // TODO change timestamp to id
-    if (code.startsWith('meld ')) {
-      return await api.getWholeChanges({ code, timestamp });
-    } else {
-      return await api.executeBlock({ code, timestamp });
-    }
+  const executeBlock = useCallback(async (code, msg_id) => { // TODO change timestamp to id
+      return await api.executeBlock({ code, msg_id });
+  }, [api]);
+  const getWholeChanges = useCallback(async (code, msg_id, file_path) => { // TODO change timestamp to id
+      return await api.getWholeChanges({ code, msg_id, file_path });
   }, [api]);
 
   const toggleAutoExecute = useCallback(async () => {
@@ -413,6 +412,7 @@ export const AppProvider = ({ children }) => {
     delMessage,
     updateProjectPath,
     executeBlock,
+    getWholeChanges,
     isNoAutoExecute,
     toggleAutoExecute,
     model,
@@ -452,6 +452,7 @@ export const AppProvider = ({ children }) => {
     delMessage,
     updateProjectPath,
     executeBlock,
+    getWholeChanges,
     isNoAutoExecute,
     toggleAutoExecute,
     model,

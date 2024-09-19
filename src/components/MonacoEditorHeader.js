@@ -1,6 +1,9 @@
+
 import React from 'react';
 import styled from 'styled-components';
 import { Button } from './SharedStyles';
+import SaveIcon from '../assets/SaveIcon';
+import CopyIcon from '../assets/CopyIcon';
 
 const HeaderContainer = styled.div`
   display: flex;
@@ -30,18 +33,41 @@ const HeaderButton = styled(Button)`
   cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
 `;
 
-const MonacoEditorHeader = ({ filename, onCopy, onSave, onUndo, onRedo, canUndo, canRedo }) => {
+const IconWrapper = styled.span`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const MonacoEditorHeader = ({ filename, onCopy, onSave, onUndo, onRedo, canUndo, canRedo, showSaveButton }) => {
+  const showUndoRedo = canUndo || canRedo;
+
   return (
     <HeaderContainer>
       <Filename>{filename}</Filename>
       <ButtonGroup>
-        <HeaderButton onClick={onUndo} disabled={!canUndo} title="Undo">↩️</HeaderButton>
-        <HeaderButton onClick={onRedo} disabled={!canRedo} title="Redo">↪️</HeaderButton>
-        <HeaderButton onClick={onSave}>Save</HeaderButton>
-        <HeaderButton onClick={onCopy}>Copy</HeaderButton>
+        {showUndoRedo && (
+          <>
+            <HeaderButton onClick={onUndo} disabled={!canUndo} title="Undo">↩️</HeaderButton>
+            <HeaderButton onClick={onRedo} disabled={!canRedo} title="Redo">↪️</HeaderButton>
+          </>
+        )}
+        {showSaveButton && (
+          <HeaderButton onClick={onSave} title="Save">
+            <IconWrapper>
+              <SaveIcon size={18} />
+            </IconWrapper>
+          </HeaderButton>
+        )}
+        <HeaderButton onClick={onCopy} title="Copy">
+          <IconWrapper>
+            <CopyIcon size={18} />
+          </IconWrapper>
+        </HeaderButton>
       </ButtonGroup>
     </HeaderContainer>
   );
 };
 
 export default MonacoEditorHeader;
+

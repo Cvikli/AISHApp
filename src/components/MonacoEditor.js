@@ -60,12 +60,14 @@ const MonacoEditor = ({
   language,
   readOnly = false,
   isExecutable,
-  messageTimestamp,
+  msg_id,
+  fileInfo,
   theme,
 }) => {
-  const { saveFile, executeBlock } = useAppContext();
+  const { saveFile, executeBlock, getWholeChanges } = useAppContext();
+  const [filePath, setFilePath] = useState('');
+  const [editorType, setEditorType] = useState('NORMAL');
   const [editorLanguage, setEditorLanguage] = useState(language || 'plaintext');
-  const [filename, setFilename] = useState('Untitled');
   const [isLoading, setIsLoading] = useState(false);
   const [executeCount, setExecuteCount] = useState(0);
   const editorRef = useRef(null);
@@ -81,6 +83,10 @@ const MonacoEditor = ({
 
   const reconstructFileContent = useCallback(() => {
     return diff.map((change) => change.equalContent + change.insertContent).join('');
+  }, [diff]);
+
+  const reconstructOriginalFileContent = useCallback(() => {
+    return diff.map((change) => change.equalContent + change.deleteContent).join('');
   }, [diff]);
 
   const handleDetailedChange = useCallback((value, event) => {
@@ -144,22 +150,11 @@ const MonacoEditor = ({
   }, [value, isEditorReady]);
 
   useEffect(() => {
-    let detectedFilename = 'Untitled';
-    let detectedLanguage = language;
-
-    if (editorValue.startsWith('meld ') || editorValue.startsWith('cat ')) {
-      detectedLanguage = getLanguageFromCommand(editorValue);
-      const match = editorValue.match(/(?:meld|cat\s+>)\s+(\S+)/);
-      if (match) {
-        detectedFilename = match[1];
-      }
-    } else {
-      detectedLanguage = language;
-    }
-
-    setFilename(detectedFilename);
-    setEditorLanguage(detectedLanguage);
-  }, [editorValue, language]);
+    if (fileInfo === null) return;
+    setEditorType(fileInfo.action);
+    setFilePath(fileInfo.filepath);
+    setEditorLanguage(getLanguageFromCommand(fileInfo.filepath));
+  }, [fileInfo]);
 
   useEffect(() => {
     if (editorRef.current && monacoRef.current && decorations && decorations.length > 0) {
@@ -194,23 +189,39 @@ const MonacoEditor = ({
     }
   }, [decorations]);
 
+  const handleChanges = useCallback(async () => {
+    if (isExecutable) {
+      setIsLoading(true);
+      try {
+        if (fileInfo !== null) {
+          const fileContent = reconstructFileContent();
+          const response = await getWholeChanges(fileContent, msg_id, fileInfo.filepath);
+          if (response.status === 'success' && response.diff) {
+            console.log(response.diff);
+            const newDiff = parseDiff(response.diff);
+            setDiff(newDiff);
+  
+            const { content, decorations: newDecorations } = renderContentFromDiff(newDiff, monacoRef.current);
+            setEditorValue(content);
+            setDecorations(newDecorations);
+            setChangeHistory((prev) => [...prev, newDiff]);
+            setHistoryIndex((prev) => prev + 1);
+          }
+          setExecuteCount((prev) => prev + 1);
+        }
+      } catch (error) {
+        console.error('Error executing block:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }, [isExecutable, msg_id, executeBlock, reconstructFileContent]);
+
   const handleExecute = useCallback(async () => {
     if (isExecutable) {
       setIsLoading(true);
       try {
-        const fileContent = reconstructFileContent();
-        const response = await executeBlock(fileContent, messageTimestamp);
-        if (response.status === 'success' && response.diff) {
-          console.log(response.diff);
-          const newDiff = parseDiff(response.diff);
-          setDiff(newDiff);
-
-          const { content, decorations: newDecorations } = renderContentFromDiff(newDiff, monacoRef.current);
-          setEditorValue(content);
-          setDecorations(newDecorations);
-          setChangeHistory((prev) => [...prev, newDiff]);
-          setHistoryIndex((prev) => prev + 1);
-        }
+        const response = await executeBlock(editorValue, msg_id);
         setExecuteCount((prev) => prev + 1);
       } catch (error) {
         console.error('Error executing block:', error);
@@ -218,7 +229,7 @@ const MonacoEditor = ({
         setIsLoading(false);
       }
     }
-  }, [isExecutable, messageTimestamp, executeBlock, reconstructFileContent]);
+  }, [isExecutable, msg_id, executeBlock, reconstructFileContent]);
 
   const handleAcceptChange = useCallback(
     (changeId) => {
@@ -409,9 +420,11 @@ const MonacoEditor = ({
   };
 
   const handleSave = useCallback(() => {
-    // saveFile(filename, editorValue);
-  }, [saveFile, filename, editorValue]);
-  
+    if (filePath) {
+      saveFile(filePath, reconstructOriginalFileContent());
+    }
+  }, [saveFile, filePath, reconstructOriginalFileContent]);
+
   const handleUndo = useCallback(() => {
     if (editorRef.current) {
       editorRef.current.trigger('keyboard', 'undo', null);
@@ -435,13 +448,14 @@ const MonacoEditor = ({
   return (
     <EditorContainer>
       <MonacoEditorHeader
-        filename={filename}
+        filename={filePath}
         onCopy={() => navigator.clipboard.writeText(editorValue)}
         onSave={handleSave}
         onUndo={handleUndo}
         onRedo={handleRedo}
         canUndo={canUndo()}
         canRedo={canRedo()}
+        showSaveButton={!!filePath} // Add this line
       />
       <EditorWrapper>
         {isExecutable && (

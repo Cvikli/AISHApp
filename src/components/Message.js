@@ -97,36 +97,47 @@ const Message = memo(({ message, theme, isStreaming = false }) => {
 
   const renderContent = useCallback(() => {
     if (!message.content) return null;
-
+  
     const blocks = message.content.split(/^```/gm);
-
+  
     return blocks.map((block, index) => {
-      if (index % 2 === 1) {
-        const [language, ...codeLines] = block.split('\n');
-        const code = codeLines.join('\n');
-        const isExecutable = ['sh', 'bash', 'zsh'].includes(language.trim());
-
-        return (
-          <EditorWrapper key={index}>
-            <MonacoEditor
-              value={code}
-              language={language.trim()}
-              readOnly={!isExecutable || isStreaming}
-              isExecutable={isExecutable}
-              autoExecute={isExecutable && (!isStreaming || index !== blocks.length - 1)}
-              messageTimestamp={message.timestamp}
-              theme={theme}
-              onChange={(newValue) => console.log(index)}
-            />
-          </EditorWrapper>
-        );
-      } else {
-        return (
-          <UserTextarea key={index}>
-            {block}
-          </UserTextarea>
-        );
+      if (index % 2 === 0) {
+        return <UserTextarea key={index}>{block}</UserTextarea>;
       }
+  
+      const [language, ...codeLines] = block.split('\n');
+      const code = codeLines.join('\n');
+      const isExecutable = ['sh', 'bash', 'zsh'].includes(language.trim());
+  
+      let fileInfo = null;
+      const prevBlock = blocks[index - 1];
+      const prevBlockLines = prevBlock.trim().split('\n');
+      const lastLine = prevBlockLines[prevBlockLines.length - 1];
+      const fileInfoMatch = lastLine.match(/^(MODIFY|CREATE)\s+(.+)$/);
+  
+      if (fileInfoMatch) {
+        fileInfo = {
+          action: fileInfoMatch[1],
+          filepath: fileInfoMatch[2]
+        };
+        blocks[index - 1] = prevBlockLines.slice(0, -1).join('\n');
+      }
+  
+      return (
+        <EditorWrapper key={index}>
+          <MonacoEditor
+            value={code}
+            language={language.trim()}
+            readOnly={!isExecutable || isStreaming}
+            isExecutable={isExecutable}
+            autoExecute={fileInfo !== null && (!isStreaming || index !== blocks.length - 1)}
+            msg_id={message.id}
+            theme={theme}
+            onChange={() => {}} // Remove console.log
+            fileInfo={fileInfo}
+          />
+        </EditorWrapper>
+      );
     });
   }, [message.content, isStreaming, message.timestamp, theme]);
 
