@@ -156,7 +156,6 @@ const ChatComponent = () => {
             }));
           },
           (inMeta) => {
-
             delMessage(conversationId, user_msg_id);
             addMessage(conversationId, {
               role: 'user',
@@ -166,6 +165,8 @@ const ChatComponent = () => {
             setTempAIMessage({
               role: 'assistant',
               content: '',
+              text: [],
+              codeblocks: [],
               timestamp: new Date().toISOString()
             });
           },

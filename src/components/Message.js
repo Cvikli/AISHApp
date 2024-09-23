@@ -95,51 +95,40 @@ const Message = memo(({ message, theme, isStreaming = false }) => {
   const formattedTimestamp = formatTimestamp(message.timestamp);
   const formattedMeta = formatMetaInfo(message);
 
+  // Helper function to determine if a codeblock is executable
+  const isExecutable = useCallback((codeblock) => {
+    return ['sh', 'bash', 'zsh'].includes(codeblock.language);
+  }, []);
+
   const renderContent = useCallback(() => {
-    if (!message.content) return null;
+    if (!message.text && !message.codeblocks) return null;
   
-    const blocks = message.content.split(/^```/gm);
-  
-    return blocks.map((block, index) => {
-      if (index % 2 === 0) {
-        return <UserTextarea key={index}>{block}</UserTextarea>;
-      }
-  
-      const [language, ...codeLines] = block.split('\n');
-      const code = codeLines.join('\n');
-      const isExecutable = ['sh', 'bash', 'zsh'].includes(language.trim());
-  
-      let fileInfo = null;
-      const prevBlock = blocks[index - 1];
-      const prevBlockLines = prevBlock.trim().split('\n');
-      const lastLine = prevBlockLines[prevBlockLines.length - 1];
-      const fileInfoMatch = lastLine.match(/^(MODIFY|CREATE)\s+(.+)$/);
-  
-      if (fileInfoMatch) {
-        fileInfo = {
-          action: fileInfoMatch[1],
-          filepath: fileInfoMatch[2]
-        };
-        blocks[index - 1] = prevBlockLines.slice(0, -1).join('\n');
-      }
-  
-      return (
-        <EditorWrapper key={index}>
-          <MonacoEditor
-            value={code}
-            language={language.trim()}
-            readOnly={!isExecutable || isStreaming}
-            isExecutable={isExecutable}
-            autoExecute={fileInfo !== null && (!isStreaming || index !== blocks.length - 1)}
-            msg_id={message.id}
-            theme={theme}
-            onChange={() => {}} // Remove console.log
-            fileInfo={fileInfo}
-          />
-        </EditorWrapper>
-      );
-    });
-  }, [message.content, isStreaming, message.timestamp, theme]);
+    return (
+      <>
+        {message.text.map((textPart, index) => (
+          <UserTextarea key={`text-${index}`}>{textPart}</UserTextarea>
+        ))}
+        {message.codeblocks.map((codeblock, index) => (
+          <EditorWrapper key={`codeblock-${index}`}>
+            <MonacoEditor
+              value={codeblock.content}
+              language={codeblock.language}
+              readOnly={!isExecutable(codeblock) || isStreaming}
+              isExecutable={isExecutable(codeblock)}
+              autoExecute={codeblock.type !== 'DEFAULT'}
+              msg_id={codeblock.id}
+              theme={theme}
+              onChange={() => {}} // You may want to implement this
+              fileInfo={{
+                action: codeblock.type,
+                filepath: codeblock.file_path
+              }}
+            />
+          </EditorWrapper>
+        ))}
+      </>
+    );
+  }, [message.text, message.codeblocks, isStreaming, theme]);
 
   return (
     <MessageContainer $isUser={isUser} theme={theme}>

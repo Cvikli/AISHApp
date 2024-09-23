@@ -48,6 +48,9 @@ export const streamProcessMessage = async (message, conversation_id, onMessage, 
                 onMessage(parsedData.content);
                 onDone(ai_meta);
                 break;
+              case 'codeblock':
+                console.log('Received codeblock data:', parsedData);
+                break;
               case 'start':
               case 'ping':
                 break;
