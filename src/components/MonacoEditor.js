@@ -91,7 +91,7 @@ const MonacoEditor = ({
 
   const handleDetailedChange = useCallback((value, event) => {
     const changes = event.changes;
-    console.log(changes);
+    // console.log(changes);
     console.log(isInitializing);
     console.log("isInitializing");
     if (isInitializing) return;
@@ -124,10 +124,10 @@ const MonacoEditor = ({
     []
   );
 
-  useEffect(() => {
-    console.log("DIFF updated????");
-    console.log(diff);
-  }, [diff]);
+  // useEffect(() => {
+  //   console.log("DIFF updated????");
+  //   console.log(diff);
+  // }, [diff]);
 
   useEffect(() => {
     if (!monacoRef.current || !isEditorReady) return;
